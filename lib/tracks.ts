@@ -19,6 +19,14 @@ export interface Track {
   rationale: string;
   /** Module slugs, in the order they should be taken. */
   modules: string[];
+  /**
+   * Project slugs that belong at the end of this track, once the modules are done.
+   *
+   * Without this a track ends at its last lesson and the capstone is only reachable by
+   * browsing to /projects, which meant someone could finish all twelve AI lessons and
+   * never learn the capstone existed.
+   */
+  projects?: string[];
   /** Tracks whose modules should be finished first. */
   requires?: string[];
   accent: "accent" | "success" | "warning";
@@ -38,6 +46,7 @@ export const TRACKS: Track[] = [
       "oop-tooling",
       "tooling-environments",
     ],
+    projects: ["log-analyzer", "text-analyzer"],
     accent: "accent",
   },
   {
@@ -52,6 +61,7 @@ export const TRACKS: Track[] = [
       "web-apis",
       "ai-python",
     ],
+    projects: ["ai-doc-assistant"],
     requires: ["foundations"],
     accent: "success",
   },
@@ -68,6 +78,7 @@ export const TRACKS: Track[] = [
       "functions-apply",
       "data-manipulation-school",
     ],
+    projects: ["building-permits", "survey-explorer", "sales-dashboard"],
     requires: ["foundations"],
     accent: "accent",
   },
@@ -97,6 +108,11 @@ export interface TrackProgress {
   done: number;
   /** Next unfinished lesson in track order, or null when the track is complete. */
   next: { moduleSlug: string; lessonSlug: string; title: string } | null;
+}
+
+/** Every track a project closes out. Used to link a project back to its track. */
+export function tracksForProject(projectSlug: string): Track[] {
+  return TRACKS.filter((t) => t.projects?.includes(projectSlug));
 }
 
 /**

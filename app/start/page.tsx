@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TrackCard } from "@/components/TrackCard";
 import { getAllModules } from "@/lib/lessons";
+import { getAllProjects } from "@/lib/projects";
 import { TRACKS, getTrack } from "@/lib/tracks";
 import { getCompletedLessons } from "@/lib/progress";
 
@@ -14,6 +15,7 @@ import { getCompletedLessons } from "@/lib/progress";
 export default function StartPage() {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const modules = getAllModules();
+  const projects = getAllProjects();
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating from localStorage
@@ -76,6 +78,7 @@ export default function StartPage() {
               key={track.slug}
               track={track}
               modules={modules}
+              projects={projects}
               completed={completed}
               requiresTitle={
                 track.requires

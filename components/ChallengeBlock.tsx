@@ -255,8 +255,18 @@ export default function ChallengeBlock({
       </div>
 
       {isPygame && (
-        <div className="px-4 py-2 border-b border-warning/30 bg-warning/[0.05] font-mono text-[11px] text-warning">
-          pygame needs a real window. copy this into a .py file and run it locally.
+        <div className="px-4 py-2 border-b border-warning/30 bg-warning/[0.05] font-mono text-[11px] text-warning space-y-1">
+          <p>pygame needs a real window. copy this into a .py file and run it locally.</p>
+          {/*
+            Said out loud because the UI otherwise looks identical to a checkable
+            challenge: same editor, same layout, but Run is disabled and no validator
+            ever fires. Leaving that implicit means a learner waits for feedback that
+            is never coming and assumes they did something wrong.
+          */}
+          <p className="text-warning/70">
+            that also means this one cannot be auto-checked here. work through it on your
+            machine and compare against the solution when you are done.
+          </p>
         </div>
       )}
 

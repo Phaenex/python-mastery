@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Module } from "@/lib/types";
+import type { Module, Project } from "@/lib/types";
 import { type Track, trackProgress } from "@/lib/tracks";
 
 const ACCENT: Record<Track["accent"], { text: string; border: string; bar: string }> = {
@@ -14,11 +14,14 @@ const ACCENT: Record<Track["accent"], { text: string; border: string; bar: strin
 export function TrackCard({
   track,
   modules,
+  projects,
   completed,
   requiresTitle,
 }: {
   track: Track;
   modules: Module[];
+  /** All projects; the card picks out the ones this track ends with. */
+  projects: Project[];
   completed: Set<string>;
   /** Title of the track this one builds on, when it has one. */
   requiresTitle?: string;
@@ -28,6 +31,9 @@ export function TrackCard({
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
   const tone = ACCENT[track.accent];
   const started = done > 0;
+  const trackProjects = (track.projects ?? [])
+    .map((slug) => projects.find((p) => p.slug === slug))
+    .filter((p): p is Project => Boolean(p));
 
   return (
     <section className={`border ${tone.border} rounded-md p-5 font-mono`}>
@@ -77,6 +83,7 @@ export function TrackCard({
           className="px-2 py-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded"
         >
           {open ? "hide" : "show"} the {track.modules.length} modules
+          {trackProjects.length > 0 && ` + ${trackProjects.length} project${trackProjects.length > 1 ? "s" : ""}`}
         </button>
       </div>
 
@@ -109,6 +116,30 @@ export function TrackCard({
               );
             })}
           </ol>
+
+          {trackProjects.length > 0 && (
+            <>
+              <p className="mt-4 text-[11px] uppercase tracking-widest text-muted-foreground">
+                then build it
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {trackProjects.map((p) => (
+                  <li key={p.slug} className="flex items-baseline gap-3 text-xs">
+                    <span className="text-muted-foreground w-6 shrink-0" aria-hidden="true">
+                      ▸
+                    </span>
+                    <Link
+                      href={`/projects/${p.slug}`}
+                      className={`${tone.text} hover:underline flex-1 min-w-0`}
+                    >
+                      {p.title}
+                    </Link>
+                    <span className="text-muted-foreground">{p.steps.length} steps</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </section>
