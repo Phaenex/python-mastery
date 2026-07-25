@@ -215,6 +215,38 @@ for (const file of files) {
 
 try { unlinkSync(TMP); } catch { /* already gone */ }
 
+// ---- project steps ------------------------------------------------------------------------
+// Project steps carry a validateFn but no solution, so their answers cannot be executed the way
+// lesson solutions can. What is still worth catching automatically is the class of bug found in
+// module8: a validator body written in Python, which `new Function` rejects at runtime and which
+// the app can only report to the learner as "validator error, please report". Parsing every body
+// costs nothing and makes that impossible to ship.
+const PROJECT_DIR = join(ROOT, 'lib', 'projects');
+let projSteps = 0;
+const projBroken = [];
+let projectFiles = [];
+try { projectFiles = readdirSync(PROJECT_DIR).filter((f) => f.endsWith('.ts')); } catch { /* none */ }
+for (const file of projectFiles) {
+  const src = readFileSync(join(PROJECT_DIR, file), 'utf8');
+  const idRe = /^\s*id:\s*"([^"]+)"/gm;
+  let m;
+  while ((m = idRe.exec(src))) {
+    const body = readTemplate(src.slice(m.index), 'validateFn:');
+    if (!body) continue;
+    projSteps += 1;
+    try {
+      new Function('output', 'locals', body);
+    } catch (err) {
+      projBroken.push({ file, id: m[1], detail: String(err) });
+    }
+  }
+}
+if (projSteps) {
+  const mark = projBroken.length ? `\x1b[31m${projBroken.length} broken\x1b[0m` : `\x1b[32mall parse\x1b[0m`;
+  console.log(`\n  project steps: ${projSteps} validators checked · ${mark}`);
+  for (const p of projBroken) console.log(`    ${p.file} ${p.id}: ${p.detail}`);
+}
+
 console.log(`\n  ${pass} passed · ${fail} failed · ${skip} skipped (package not installed locally)`);
 if (failures.length) {
   console.log('\n  Failures:');
@@ -223,4 +255,4 @@ if (failures.length) {
     console.log(`      ${f.detail}`);
   }
 }
-process.exit(fail ? 1 : 0);
+process.exit(fail || projBroken.length ? 1 : 0);

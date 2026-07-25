@@ -4,6 +4,7 @@ import { textAnalyzerProject } from "./projects/text-analyzer";
 import { buildingPermitsProject } from "./projects/building-permits";
 import { surveyExplorerProject } from "./projects/survey-explorer";
 import { salesDashboardProject } from "./projects/sales-dashboard";
+import { aiDocAssistantProject } from "./projects/ai-doc-assistant";
 
 const ALL_PROJECTS: Project[] = [
   logAnalyzerProject,
@@ -11,6 +12,7 @@ const ALL_PROJECTS: Project[] = [
   buildingPermitsProject,
   surveyExplorerProject,
   salesDashboardProject,
+  aiDocAssistantProject,
 ];
 
 export function getAllProjects(): Project[] {

@@ -917,4 +917,447 @@ print("passed:", check_golden(replies))`,
       },
     ],
   },
+
+  {
+    module: "AI Engineering",
+    moduleSlug: "ai-python",
+    lessonNumber: 9,
+    slug: "concurrency",
+    title: "Stop Waiting: Concurrent Calls",
+    badge: "practice",
+    theory: `
+A serial loop over 500 rows spends almost all of its life waiting. Each call takes a
+second or two, and during that time your program does nothing at all. Five hundred
+calls at two seconds is over sixteen minutes of mostly idle.
+
+API calls are I/O bound, which is the case concurrency is built for. Fire many, wait
+for all of them together.
+
+\`\`\`python
+import asyncio
+
+async def run_all(items):
+    tasks = [call_model(item) for item in items]
+    return await asyncio.gather(*tasks, return_exceptions=True)
+\`\`\`
+
+\`return_exceptions=True\` matters. Without it, the first failure cancels the rest and
+you lose the work that already succeeded, which is the batching lesson all over again.
+
+⚠️ Warning: do not fire 500 at once. You will hit the rate limit immediately and spend
+longer retrying than you saved. Cap it with a semaphore, or process in fixed-size
+batches, which is simpler to reason about and usually enough.
+
+\`\`\`python
+def batches(items, size):
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+\`\`\`
+
+💡 Key: the useful number is not "how fast is one call" but "how many can I have in
+flight without getting limited". That is the number to tune.
+
+📝 Note: the browser runtime already has an event loop running, so \`asyncio.run()\`
+cannot be called here. The challenges drill the batching and speedup arithmetic, which
+is the part you actually get wrong. The \`asyncio\` shape above is what you write in a
+real script.
+`,
+    starterCode: `def batches(items, size):
+    """Yield fixed-size chunks so you never have too many calls in flight."""
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+codes = [f"AP{n:03d}" for n in range(23)]
+groups = list(batches(codes, 8))
+
+print("items:", len(codes))
+print("batches of 8:", len(groups))
+print("last batch size:", len(groups[-1]))
+`,
+    examples: [
+      {
+        title: "Serial versus concurrent time",
+        explanation: "With a cap of 10 in flight, wall time is batches times per-call time",
+        code: `n, per_call, limit = 500, 2.0, 10
+serial = n * per_call
+concurrent = (n / limit) * per_call
+print(f"serial {serial:.0f}s -> concurrent {concurrent:.0f}s")`,
+      },
+      {
+        title: "Keeping failures instead of losing the batch",
+        explanation: "return_exceptions=True is the asyncio version of try inside the loop",
+        code: `results = ["ok", ValueError("rate limited"), "ok"]
+good = [r for r in results if not isinstance(r, Exception)]
+bad = [r for r in results if isinstance(r, Exception)]
+print(len(good), "ok,", len(bad), "failed")`,
+      },
+    ],
+    challenges: [
+      {
+        id: "ai9c1",
+        prompt:
+          "Using batches() from the editor, split 23 codes into groups of 8 and print 'batches: N' and 'last: M' where M is the size of the final group. You should get batches: 3 and last: 7.",
+        hint: "list(batches(codes, 8)) gives the groups; len() the list, and len() the final element.",
+        validateFn: `return /batches:\\s*3/.test(output) && /last:\\s*7/.test(output)`,
+        solution: `def batches(items, size):
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+codes = [f"AP{n:03d}" for n in range(23)]
+groups = list(batches(codes, 8))
+print("batches:", len(groups))
+print("last:", len(groups[-1]))`,
+      },
+      {
+        id: "ai9c2",
+        prompt:
+          "Write speedup(n, per_call, limit) returning how many seconds you save by running `limit` calls concurrently instead of serially. Print the saving for 500 calls at 2.0s with a limit of 10, formatted to 0 decimals followed by 's'. It should be 900s.",
+        hint: "serial = n * per_call; concurrent = (n / limit) * per_call; return the difference and print with an f-string.",
+        validateFn: `return /900s/.test(output)`,
+        solution: `def speedup(n, per_call, limit):
+    serial = n * per_call
+    concurrent = (n / limit) * per_call
+    return serial - concurrent
+
+print(f"{speedup(500, 2.0, 10):.0f}s")`,
+      },
+    ],
+  },
+
+  {
+    module: "AI Engineering",
+    moduleSlug: "ai-python",
+    lessonNumber: 10,
+    slug: "streaming",
+    title: "Streaming: Tokens As They Arrive",
+    badge: "practice",
+    theory: `
+Without streaming, a 900-token answer means the user stares at nothing for eight
+seconds and then everything appears at once. With streaming, the first words show up in
+a few hundred milliseconds. The total time is the same. The experience is not.
+
+The shape is a loop over chunks instead of one return value.
+
+\`\`\`python
+full = []
+with client.messages.stream(**kwargs) as stream:
+    for piece in stream.text_stream:
+        full.append(piece)
+        print(piece, end="", flush=True)
+answer = "".join(full)
+\`\`\`
+
+You still want the whole string at the end, for logging, parsing, or saving. Collect as
+you go rather than trying to recover it afterwards.
+
+⚠️ Warning: streaming and structured output fight each other. A half-arrived JSON object
+is not parseable, so do not try to \`json.loads\` mid-stream. Stream when a human is
+reading; take the whole response when a program is parsing.
+
+✨ Tip: \`"".join(pieces)\` at the end, not \`answer += piece\` in the loop. String
+concatenation in a loop rebuilds the whole string every time, which is quadratic and
+genuinely slow once the answer is long.
+
+💡 Key: a stream can fail halfway. You may have a partial answer and an exception. Decide
+what that means for your app before it happens, because a truncated answer that looks
+complete is worse than a visible error.
+`,
+    starterCode: `# A stream arrives in pieces. Collect them, then join once at the end.
+chunks = ["The ", "code ", "MKE ", "serves ", "Milwaukee."]
+
+pieces = []
+for c in chunks:
+    pieces.append(c)
+
+answer = "".join(pieces)
+print(answer)
+print("chunks:", len(chunks), "chars:", len(answer))
+`,
+    examples: [
+      {
+        title: "Join once, not concatenate in a loop",
+        explanation: "Repeated += rebuilds the whole string each pass",
+        code: `chunks = ["a", "b", "c"]
+print("".join(chunks))`,
+      },
+      {
+        title: "A stream that dies halfway",
+        explanation: "You are left holding a partial answer; that is a decision, not a surprise",
+        code: `chunks = ["The code ", "MKE "]
+partial = "".join(chunks)
+complete = partial.endswith(".")
+print(repr(partial), "complete:", complete)`,
+      },
+    ],
+    challenges: [
+      {
+        id: "ai10c1",
+        prompt:
+          "Write collect(chunks) that joins streamed pieces into one string and returns it. Print the joined answer and then 'chars: N'. Using the chunks in the editor you should see the full sentence and chars: 30.",
+        hint: 'Append to a list in the loop, then return "".join(pieces). len() the result.',
+        validateFn: `return output.includes("MKE serves Milwaukee.") && /chars:\\s*30/.test(output)`,
+        solution: `def collect(chunks):
+    pieces = []
+    for c in chunks:
+        pieces.append(c)
+    return "".join(pieces)
+
+answer = collect(["The ", "code ", "MKE ", "serves ", "Milwaukee."])
+print(answer)
+print("chars:", len(answer))`,
+      },
+      {
+        id: "ai10c2",
+        prompt:
+          "A stream can stop early. Write is_complete(text) returning True only when the collected text ends with a period. Print the result for a truncated stream and then for a finished one. Output should show False then True.",
+        hint: "Return text.rstrip().endswith(\".\") and print both cases on separate lines.",
+        validateFn: `const o = output.toLowerCase();
+return o.includes("false") && o.includes("true") && o.indexOf("false") < o.indexOf("true")`,
+        solution: `def is_complete(text):
+    return text.rstrip().endswith(".")
+
+print(is_complete("The code MKE "))
+print(is_complete("The code MKE serves Milwaukee."))`,
+      },
+    ],
+  },
+
+  {
+    module: "AI Engineering",
+    moduleSlug: "ai-python",
+    lessonNumber: 11,
+    slug: "agent-loops",
+    title: "Agent Loops: More Than One Turn",
+    badge: "challenge",
+    theory: `
+Single tool use is one round trip: the model asks for a tool, you run it, you send the
+result. An agent loop is the same thing repeated until the model stops asking.
+
+\`\`\`python
+def run_agent(question, max_steps=6):
+    messages = [{"role": "user", "content": question}]
+    for step in range(max_steps):
+        reply = call_model(messages)
+        if not reply.get("tool_call"):
+            return reply["text"]          # the model is done
+        result = dispatch(reply["tool_call"])
+        messages.append({"role": "tool", "content": str(result)})
+    return "stopped: step budget exhausted"
+\`\`\`
+
+Three things make this safe, and all three are yours, not the model's.
+
+**A step budget.** Without \`max_steps\` a confused model loops forever and every
+iteration costs money. This is the single most important line in the function.
+
+**A termination check you control.** "No tool call requested" is the exit. Do not rely
+on the model saying "I am finished" in prose.
+
+**A dispatcher that refuses unknown tools**, exactly as in the tool-use lesson. More
+turns means more chances for a bad call.
+
+⚠️ Warning: costs compound. Every step resends the whole conversation, so a six-step
+loop over a long context is not six times one call, it is closer to twenty-one times
+the first one. Watch the growth, not the count.
+
+💡 Key: an agent is a while loop with a budget and an exit condition. The interesting
+engineering is the guardrails, not the intelligence.
+`,
+    starterCode: `TOOLS = {"lookup": lambda code: {"MKE": "Milwaukee"}.get(code, "unknown")}
+
+def dispatch(call):
+    fn = TOOLS.get(call["name"])
+    if fn is None:
+        return {"error": f"unknown tool: {call['name']}"}
+    return {"result": fn(**call["arguments"])}
+
+# A scripted "model": asks for one tool call, then answers.
+script = [
+    {"tool_call": {"name": "lookup", "arguments": {"code": "MKE"}}},
+    {"text": "MKE serves Milwaukee."},
+]
+
+def call_model(messages, _script=iter(script)):
+    return next(_script)
+
+messages = [{"role": "user", "content": "What city is MKE?"}]
+for step in range(6):
+    reply = call_model(messages)
+    if not reply.get("tool_call"):
+        print("answer:", reply["text"])
+        break
+    out = dispatch(reply["tool_call"])
+    print("step", step, "tool ->", out)
+    messages.append({"role": "tool", "content": str(out)})
+`,
+    examples: [
+      {
+        title: "The budget is the safety net",
+        explanation: "A model that never stops asking is stopped by you, not by itself",
+        code: `steps = 0
+for steps in range(1, 4):
+    pass
+print("stopped after", steps, "steps")`,
+      },
+      {
+        title: "Context grows every turn",
+        explanation: "Each step resends everything before it, so cost is cumulative",
+        code: `tokens = 500
+total = 0
+for step in range(4):
+    total += tokens
+    tokens += 200
+print("tokens billed across 4 steps:", total)`,
+      },
+    ],
+    challenges: [
+      {
+        id: "ai11c1",
+        prompt:
+          "Complete the loop in the editor so it runs the tool, then prints the final answer. Output must contain 'answer: MKE serves Milwaukee.' and show at least one tool step.",
+        hint: "Break out of the loop when reply has no tool_call, printing reply['text']; otherwise dispatch and append the result.",
+        validateFn: `return output.includes("answer: MKE serves Milwaukee.") && /step\\s*0/.test(output)`,
+        solution: `TOOLS = {"lookup": lambda code: {"MKE": "Milwaukee"}.get(code, "unknown")}
+
+def dispatch(call):
+    fn = TOOLS.get(call["name"])
+    if fn is None:
+        return {"error": f"unknown tool: {call['name']}"}
+    return {"result": fn(**call["arguments"])}
+
+script = [
+    {"tool_call": {"name": "lookup", "arguments": {"code": "MKE"}}},
+    {"text": "MKE serves Milwaukee."},
+]
+
+def call_model(messages, _script=iter(script)):
+    return next(_script)
+
+messages = [{"role": "user", "content": "What city is MKE?"}]
+for step in range(6):
+    reply = call_model(messages)
+    if not reply.get("tool_call"):
+        print("answer:", reply["text"])
+        break
+    out = dispatch(reply["tool_call"])
+    print("step", step, "tool ->", out)
+    messages.append({"role": "tool", "content": str(out)})`,
+      },
+      {
+        id: "ai11c2",
+        prompt:
+          "Guard against a model that never stops. Write run_capped(max_steps) that always asks for a tool and returns the string 'stopped: budget exhausted' once the budget runs out. Print the result for max_steps=3. It must contain 'budget exhausted'.",
+        hint: "Loop range(max_steps) always dispatching, and return the stop string after the loop ends.",
+        validateFn: `return output.toLowerCase().includes("budget exhausted")`,
+        solution: `def run_capped(max_steps=3):
+    for _ in range(max_steps):
+        pass  # a model that always asks for another tool
+    return "stopped: budget exhausted"
+
+print(run_capped(3))`,
+      },
+    ],
+  },
+
+  {
+    module: "AI Engineering",
+    moduleSlug: "ai-python",
+    lessonNumber: 12,
+    slug: "prompt-caching",
+    title: "Caching: Stop Paying for the Same Tokens",
+    badge: "practice",
+    theory: `
+If every call in a 5,000-row batch resends the same 2,000-token instruction block, you
+paid for ten million tokens of identical text. Prompt caching exists for exactly that.
+
+The provider stores a prefix of your prompt and charges much less when the next call
+starts with the same bytes. The rule that follows is simple and easy to get wrong:
+
+**Put everything stable at the front, and everything that varies at the back.**
+
+\`\`\`python
+messages = [
+    {"role": "system", "content": BIG_STABLE_INSTRUCTIONS},   # cacheable prefix
+    {"role": "user", "content": f"<row>{row}</row>"},          # the part that changes
+]
+\`\`\`
+
+Interpolating the row number, a timestamp, or today's date into the system prompt
+breaks the prefix on every call and the cache never hits once. That is the most common
+way people accidentally pay full price while believing caching is on.
+
+💡 Key: a cache hit is usually around a tenth of the input price. On a long stable
+prefix that is most of the bill.
+
+✨ Tip: caches expire, often within minutes. A hit rate below 1.0 is normal. Measure
+what you actually got instead of assuming every call after the first was cached.
+
+⚠️ Warning: caching does not make a bad prompt cheap. Trimming 400 tokens of waste
+still beats caching 400 tokens of waste, because you pay something for every cached
+token too.
+`,
+    starterCode: `IN_RATE = 3.00 / 1_000_000
+CACHED_RATE = IN_RATE / 10
+
+prefix_tokens = 2000
+variable_tokens = 60
+calls = 5000
+
+uncached = calls * (prefix_tokens + variable_tokens) * IN_RATE
+cached = (prefix_tokens * IN_RATE) + (calls - 1) * (
+    prefix_tokens * CACHED_RATE + variable_tokens * IN_RATE
+) + variable_tokens * IN_RATE
+
+print(f"no caching: \${uncached:.2f}")
+print(f"with caching: \${cached:.2f}")
+`,
+    examples: [
+      {
+        title: "The mistake that silently disables caching",
+        explanation: "A changing value inside the stable prefix breaks it on every call",
+        code: `row = 42
+bad = f"You are an assistant. Processing row {row}."
+good = "You are an assistant."
+print("prefix stable?", bad == "You are an assistant. Processing row 1.", "|", good == "You are an assistant.")`,
+      },
+      {
+        title: "Measuring the hit rate you actually got",
+        explanation: "Assume nothing; count",
+        code: `hits, total = 4310, 5000
+print(f"cache hit rate: {hits / total:.1%}")`,
+      },
+    ],
+    challenges: [
+      {
+        id: "ai12c1",
+        prompt:
+          "Using the rates in the editor, print the money saved by caching a 2000-token prefix across 5000 calls, formatted with a dollar sign and two decimals as 'saved: $X.XX'. It should be a saving of about $26.",
+        hint: "Compute uncached and cached totals as shown, subtract, and print with an f-string.",
+        validateFn: `return /saved:\\s*\\$\\d+\\.\\d{2}/.test(output)`,
+        solution: `IN_RATE = 3.00 / 1_000_000
+CACHED_RATE = IN_RATE / 10
+prefix_tokens, variable_tokens, calls = 2000, 60, 5000
+
+uncached = calls * (prefix_tokens + variable_tokens) * IN_RATE
+cached = (prefix_tokens * IN_RATE) + (calls - 1) * (
+    prefix_tokens * CACHED_RATE + variable_tokens * IN_RATE
+) + variable_tokens * IN_RATE
+
+print(f"saved: \${uncached - cached:.2f}")`,
+      },
+      {
+        id: "ai12c2",
+        prompt:
+          "Write is_cacheable(prefixes) that returns True only when every prefix in the list is identical. Test it with a list containing a row number baked in, then with a clean constant list, and print both. Output should show False then True.",
+        hint: "len(set(prefixes)) == 1 tells you they are all the same.",
+        validateFn: `const o = output.toLowerCase();
+return o.includes("false") && o.includes("true") && o.indexOf("false") < o.indexOf("true")`,
+        solution: `def is_cacheable(prefixes):
+    return len(set(prefixes)) == 1
+
+print(is_cacheable([f"Processing row {n}." for n in range(3)]))
+print(is_cacheable(["You are an assistant."] * 3))`,
+      },
+    ],
+  },
 ];
