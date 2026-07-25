@@ -62,6 +62,12 @@ export const MODULE_METADATA: Omit<Module, "lessons">[] = [
       "Arrays, dtypes, reshape, broadcasting, and vectorization. The math layer under pandas, plus how to drop down to it when you need speed.",
   },
   {
+    slug: "ai-python",
+    title: "AI Engineering",
+    description:
+      "Calling models, forcing structured output, surviving rate limits, counting tokens and cost, embeddings, retrieval, tool use, and how to test output that changes every run. The parts of AI work that actually break.",
+  },
+  {
     slug: "game-dev-pygame",
     title: "Game Dev with Pygame",
     description:

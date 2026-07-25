@@ -10,6 +10,7 @@ import { lessonsModule5 } from "./lessons/module5";
 import { lessonsModule6 } from "./lessons/module6";
 import { lessonsModule7 } from "./lessons/module7";
 import { lessonsModuleNumpy } from "./lessons/moduleNumpy";
+import { lessonsModuleAi } from "./lessons/moduleAi";
 import { lessonsModule8 } from "./lessons/module8";
 import { lessonsModule9 } from "./lessons/module9";
 import { lessonsModuleOop } from "./lessons/moduleOop";
@@ -26,6 +27,7 @@ const ALL_LESSONS: Lesson[] = [
   ...lessonsModule7,
   ...lessonsModuleCore,
   ...lessonsModuleNumpy,
+  ...lessonsModuleAi,
   ...lessonsModule8,
   ...lessonsModule9,
   ...lessonsModuleOop,

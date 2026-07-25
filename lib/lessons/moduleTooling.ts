@@ -541,4 +541,117 @@ print(clamp_score(150))`,
       },
     ],
   },
+  {
+    module: "Tooling & Environments",
+    moduleSlug: "tooling-environments",
+    lessonNumber: 6,
+    slug: "jupyter-notebooks",
+    title: "Notebooks: When They Help and When They Hurt",
+    badge: "concept",
+    theory: `
+A notebook is a JSON file full of cells. Markdown cells explain, code cells run, and
+outputs are saved alongside the code that produced them. That combination is why
+notebooks won for exploration, teaching, and anything you need to hand to a human.
+
+\`\`\`json
+{"cells": [
+  {"cell_type": "markdown", "source": ["# Airport analysis"]},
+  {"cell_type": "code", "source": ["print(df.shape)"], "outputs": []}
+]}
+\`\`\`
+
+Because it is only JSON, you can inspect a notebook with the standard library. That is
+worth knowing when one will not open, or when you want to count cells in a submission
+without launching Jupyter.
+
+**Where notebooks help:** exploring unfamiliar data, showing your work, teaching, and
+anything where the output belongs next to the code that made it.
+
+**Where they hurt:** anything that has to run twice the same way. Cells can be executed
+out of order, so a notebook that works on your screen can be genuinely unreproducible.
+The state in memory is not visible in the file.
+
+⚠️ Warning: "Restart and Run All" before you trust or submit a notebook. If it fails,
+it was passing only because of a variable defined in a cell you later edited or deleted.
+
+✨ Tip: exporting to HTML or PDF with \`nbconvert\` is usually what a submission actually
+requires, and it is one command:
+\`jupyter nbconvert --to html analysis.ipynb\`
+
+💡 Key: when code stops being explored and starts being depended on, move it into a
+\`.py\` module and import it. Notebooks are a great workshop and a poor warehouse.
+`,
+    starterCode: `import json
+
+notebook = json.loads("""
+{"cells": [
+  {"cell_type": "markdown", "source": ["# Airport analysis"]},
+  {"cell_type": "code", "source": ["print(1 + 1)"], "outputs": []},
+  {"cell_type": "code", "source": ["print('done')"], "outputs": []}
+]}
+""")
+
+for cell in notebook["cells"]:
+    print(cell["cell_type"], "->", cell["source"][0])
+`,
+    examples: [
+      {
+        title: "Counting cells by type",
+        explanation: "A notebook is JSON, so this needs no Jupyter at all",
+        code: `import json
+nb = json.loads('{"cells":[{"cell_type":"code"},{"cell_type":"markdown"}]}')
+codes = [c for c in nb["cells"] if c["cell_type"] == "code"]
+print(len(codes), "code cells")`,
+      },
+      {
+        title: "Export for submission",
+        explanation: "The grader usually wants the rendered version, not the .ipynb",
+        code: `print("jupyter nbconvert --to html analysis.ipynb")`,
+      },
+    ],
+    challenges: [
+      {
+        id: "toolc6a",
+        prompt:
+          "Using the notebook JSON in the editor, write count_cells(nb, kind) that returns how many cells have that cell_type. Print the code-cell count as 'code cells: N'. It should be 2.",
+        hint: 'Loop nb["cells"] and count the ones whose "cell_type" equals kind.',
+        validateFn: `return /code cells:\\s*2/.test(output)`,
+        solution: `import json
+
+notebook = json.loads("""
+{"cells": [
+  {"cell_type": "markdown", "source": ["# Airport analysis"]},
+  {"cell_type": "code", "source": ["print(1 + 1)"], "outputs": []},
+  {"cell_type": "code", "source": ["print('done')"], "outputs": []}
+]}
+""")
+
+def count_cells(nb, kind):
+    return len([c for c in nb["cells"] if c["cell_type"] == kind])
+
+print("code cells:", count_cells(notebook, "code"))`,
+      },
+      {
+        id: "toolc6b",
+        prompt:
+          "Write extract_code(nb) that returns all code-cell source lines joined into one string, and print it. The output must contain both print statements from the notebook.",
+        hint: 'Collect "".join(c["source"]) for code cells, then join those with newlines.',
+        validateFn: `return output.includes("1 + 1") && output.includes("done")`,
+        solution: `import json
+
+notebook = json.loads("""
+{"cells": [
+  {"cell_type": "markdown", "source": ["# Airport analysis"]},
+  {"cell_type": "code", "source": ["print(1 + 1)"], "outputs": []},
+  {"cell_type": "code", "source": ["print('done')"], "outputs": []}
+]}
+""")
+
+def extract_code(nb):
+    return "\\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code")
+
+print(extract_code(notebook))`,
+      },
+    ],
+  },
 ];

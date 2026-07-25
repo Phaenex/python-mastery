@@ -1337,4 +1337,103 @@ print("\\n[COMPLETE] Pipeline finished successfully!")`,
       xpReward: 50,
     },
   },
+  {
+    module: "Web & APIs",
+    moduleSlug: "web-apis",
+    lessonNumber: 31,
+    slug: "sockets",
+    title: "Sockets: Talking Directly to Another Program",
+    badge: "concept",
+    theory: `
+An HTTP request is a polite, highly structured conversation over a socket. A socket is
+the raw version: one program listens, another dials, and they exchange bytes until
+someone hangs up.
+
+The server side is four calls.
+
+\`\`\`python
+import socket
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(("127.0.0.1", 5000))   # claim an address and port
+server.listen()                     # start queueing connections
+conn, addr = server.accept()        # block until someone dials
+\`\`\`
+
+The client side is two.
+
+\`\`\`python
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(("127.0.0.1", 5000))
+\`\`\`
+
+⚠️ Warning: sockets move **bytes**, not Python strings. You must \`.encode()\` before
+sending and \`.decode()\` after receiving. Forgetting this is the single most common
+socket bug and the error message rarely says so plainly.
+
+💡 Key: pick a port above 1023. Everything below that is reserved and needs
+administrator rights on most systems.
+
+📝 Note: this lesson does not run here. The browser sandbox has no socket layer, which
+is exactly why the web uses HTTP through a browser API instead. To run the real thing,
+put the server in one file and the client in another and run them in two terminals.
+The challenges below drill the part that actually breaks: encoding and message framing.
+
+✨ Tip: whoever speaks first is a decision you must make and write down. If both sides
+wait to receive, both block forever and the program simply hangs with no error.
+`,
+    starterCode: `# Sockets need a real OS network stack, so this lesson explains and drills
+# rather than runs. The encode/decode work below is the part that bites people.
+
+message = "hello server"
+as_bytes = message.encode()
+print("sending:", as_bytes)
+print("received back:", as_bytes.decode())
+`,
+    examples: [
+      {
+        title: "encode and decode",
+        explanation: "Strings go out as bytes and come back as bytes; you convert both ways",
+        code: `msg = "MKE"
+data = msg.encode()
+print(type(data).__name__, data)
+print(data.decode())`,
+      },
+      {
+        title: "Framing a message",
+        explanation:
+          "TCP is a stream, not a message queue; a delimiter tells you where one message ends",
+        code: `stream = "first\\nsecond\\nthird\\n"
+for line in stream.split("\\n"):
+    if line:
+        print("message:", line)`,
+      },
+    ],
+    challenges: [
+      {
+        id: "m6l6c1",
+        prompt:
+          "Write round_trip(text) that encodes a string to bytes and decodes it back, returning the decoded string. Print the result for 'hello server' and also print the type name of the encoded form. Output must contain 'bytes' and 'hello server'.",
+        hint: "Use text.encode() then .decode(); type(data).__name__ gives the type name.",
+        validateFn: `return output.includes("bytes") && output.includes("hello server")`,
+        solution: `def round_trip(text):
+    data = text.encode()
+    print(type(data).__name__)
+    return data.decode()
+
+print(round_trip("hello server"))`,
+      },
+      {
+        id: "m6l6c2",
+        prompt:
+          "TCP is a stream, so messages arrive glued together. Write split_messages(stream) that splits on newline and drops empty pieces, and print how many messages are in 'first\\\\nsecond\\\\nthird\\\\n' as 'messages: N'. It should be 3.",
+        hint: "Split on the newline character and filter out empty strings, then print the length.",
+        validateFn: `return /messages:\\s*3/.test(output)`,
+        solution: `def split_messages(stream):
+    return [m for m in stream.split("\\n") if m]
+
+print("messages:", len(split_messages("first\\nsecond\\nthird\\n")))`,
+      },
+    ],
+  },
 ];

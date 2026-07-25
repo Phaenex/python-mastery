@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:lessons": "node scripts/check-lessons.mjs",
+    "verify": "npm run check:lessons && npm run lint && npx tsc --noEmit && npm run build"
   },
   "dependencies": {
     "next": "16.2.3",

@@ -742,18 +742,33 @@ print(result)`,
     challenges: [
       {
         id: "m9l4c1",
-        prompt: "Merge the orders and customers DataFrames using an inner join on customer_id and print the result.",
-        hint: "Use pd.merge() with how='inner'",
-        validateFn: `return output.includes("Alice") && output.includes("Bob") && !output.includes("Carol") && !output.includes("NaN")`,
+        prompt: "Merge the orders and customers DataFrames using an inner join on customer_id. Print the line 'Inner join:' first, then the result.",
+        hint: "print(\"Inner join:\") then pd.merge(orders, customers, on=\"customer_id\", how=\"inner\")",
+        // Checks only the text after the label. The editor is pre-seeded with this
+        // lesson's starterCode, which prints the customers table (Carol included), so a
+        // validator that scanned the whole output could never be satisfied by a learner
+        // who wrote their answer under "# Your code here:" as instructed.
+        validateFn: `const i = output.lastIndexOf("Inner join:");
+if (i === -1) return false;
+const merged = output.slice(i);
+return merged.includes("Alice") && merged.includes("Bob") && !merged.includes("Carol") && !merged.includes("NaN")`,
         solution: `result = pd.merge(orders, customers, on="customer_id", how="inner")
+print("Inner join:")
 print(result)`,
       },
       {
         id: "m9l4c2",
-        prompt: "Use a left join to keep all orders and add customer names. Print the result to see which orders have missing customer info (NaN).",
-        hint: "Use pd.merge() with how='left'",
-        validateFn: `return output.includes("103") && (output.includes("NaN") || output.includes("nan"))`,
+        prompt: "Use a left join to keep all orders and add customer names. Print the line 'Left join:' first, then the result, so you can see which order has missing customer info (NaN).",
+        hint: "print(\"Left join:\") then pd.merge(orders, customers, on=\"customer_id\", how=\"left\")",
+        // Scoped to the labelled section for the same reason as the inner-join challenge,
+        // and because the seeded starterCode already prints both "103" and the orders
+        // table: an unscoped check passed without the learner merging anything at all.
+        validateFn: `const i = output.lastIndexOf("Left join:");
+if (i === -1) return false;
+const merged = output.slice(i);
+return merged.includes("103") && (merged.includes("NaN") || merged.includes("nan")) && merged.includes("Alice")`,
         solution: `result = pd.merge(orders, customers, on="customer_id", how="left")
+print("Left join:")
 print(result)`,
       },
     ],

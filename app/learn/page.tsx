@@ -70,7 +70,15 @@ export default function LearnDashboard() {
         </section>
 
         <section className="mt-8">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono"># modules</p>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono"># modules</p>
+            <Link
+              href="/start"
+              className="font-mono text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+            >
+              browsing all {modules.length}? pick a track instead →
+            </Link>
+          </div>
           <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {modules.map((module, index) => {
               const prevModule = index > 0 ? modules[index - 1] : null;
