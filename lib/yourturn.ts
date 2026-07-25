@@ -344,4 +344,117 @@ export const YOUR_TURN: Record<string, FillItem[]> = {
     fill("Add a type hint marking name as a str.", 'def greet(name: ___) -> str:\n    return "hi " + name\n\nprint(greet("Sam"))', [["str"]],
       "Type hints document the expected types for tools like mypy.", 'def greet(name: str) -> str:\n    return "hi " + name\n\nprint(greet("Sam"))'),
   ],
+
+  "ai-python/talking-to-a-model": [
+    fill("Give the standing instruction the system role.", 'msgs = [{"role": "___", "content": "Be terse."}]\nprint(msgs[0]["role"])', [['system', '"system"', "'system'"]],
+      "System sets behavior; user carries the request.", 'msgs = [{"role": "system", "content": "Be terse."}]\nprint(msgs[0]["role"])'),
+  ],
+  "ai-python/structured-output": [
+    fill("Parse a CSV reply into rows.", 'import csv, io\nreply = "MKE,Milwaukee"\nprint(list(csv.___(io.StringIO(reply))))', [["reader"]],
+      "csv.reader turns the text into a list of fields you can index.", 'import csv, io\nreply = "MKE,Milwaukee"\nprint(list(csv.reader(io.StringIO(reply))))'),
+  ],
+  "ai-python/batching-and-failure": [
+    fill("Keep the failures instead of losing them.", 'failures = []\ntry:\n    raise ValueError("rate limited")\nexcept Exception as exc:\n    failures.___(exc)\nprint(len(failures))', [["append"]],
+      "Collecting failures lets you retry exactly those instead of the whole batch.", 'failures = []\ntry:\n    raise ValueError("rate limited")\nexcept Exception as exc:\n    failures.append(exc)\nprint(len(failures))'),
+  ],
+  "ai-python/tokens-and-cost": [
+    fill("Estimate tokens as roughly four characters each.", 'text = "a" * 400\nprint(max(1, len(text) ___ 4))', [["//"]],
+      "Integer division gives a whole-token estimate, good enough for budgeting.", 'text = "a" * 400\nprint(max(1, len(text) // 4))'),
+  ],
+  "ai-python/embeddings": [
+    fill("Get the length of a vector.", 'import numpy as np\nprint(float(np.linalg.___(np.array([3.0, 4.0]))))', [["norm"]],
+      "norm of [3,4] is 5; cosine divides by both vectors' norms.", 'import numpy as np\nprint(float(np.linalg.norm(np.array([3.0, 4.0]))))'),
+  ],
+  "ai-python/retrieval-rag": [
+    fill("Split a document into chunks on blank lines.", 'doc = "one\\n\\ntwo"\nprint(len([c for c in doc.___("\\n\\n") if c.strip()]))', [["split"]],
+      "Splitting on blank lines keeps whole thoughts together.", 'doc = "one\\n\\ntwo"\nprint(len([c for c in doc.split("\\n\\n") if c.strip()]))'),
+  ],
+  "ai-python/tool-use": [
+    fill("Look a tool up safely instead of calling it directly.", 'TOOLS = {"add": lambda a, b: a + b}\nfn = TOOLS.___("delete_all")\nprint(fn is None)', [["get"]],
+      "get returns None for an unknown name instead of raising, so you can return an error.", 'TOOLS = {"add": lambda a, b: a + b}\nfn = TOOLS.get("delete_all")\nprint(fn is None)'),
+  ],
+  "ai-python/testing-ai-code": [
+    fill("Assert the shape rather than the exact words.", 'reply = "The code MKE serves Milwaukee."\nprint("MKE" ___ reply)', [["in"]],
+      "A containment check survives a reword; an equality check would not.", 'reply = "The code MKE serves Milwaukee."\nprint("MKE" in reply)'),
+  ],
+  "ai-python/a-real-call": [
+    fill("Build the JSON body you would POST to the demo endpoint.", 'import json\nprint(json.___({"prompt": "Name an airport."}))', [["dumps"]],
+      "dumps serialises the dict; the real lesson awaits pyfetch with this as the body.", 'import json\nprint(json.dumps({"prompt": "Name an airport."}))'),
+  ],
+  "ai-python/concurrency": [
+    fill("Chunk work so you never have too many calls in flight.", 'items = list(range(23))\nsize = 8\nprint(len([items[i:i + size] for i in ___(0, len(items), size)]))', [["range"]],
+      "range with a step walks the list in fixed-size batches.", 'items = list(range(23))\nsize = 8\nprint(len([items[i:i + size] for i in range(0, len(items), size)]))'),
+  ],
+  "ai-python/streaming": [
+    fill("Join streamed pieces once at the end.", 'chunks = ["The ", "code ", "MKE."]\nprint("".___(chunks))', [["join"]],
+      "join once is linear; += in a loop rebuilds the string every pass.", 'chunks = ["The ", "code ", "MKE."]\nprint("".join(chunks))'),
+  ],
+  "ai-python/agent-loops": [
+    fill("Give the loop a budget so it cannot run forever.", 'for step in ___(6):\n    pass\nprint("stopped at", step)', [["range"]],
+      "The step budget is the single most important line in an agent loop.", 'for step in range(6):\n    pass\nprint("stopped at", step)'),
+  ],
+  "ai-python/prompt-caching": [
+    fill("Check whether every prefix is identical, so the cache can hit.", 'prefixes = ["You are an assistant."] * 3\nprint(len(___(prefixes)) == 1)', [["set"]],
+      "A set of size 1 means nothing varied, so the prefix is cacheable.", 'prefixes = ["You are an assistant."] * 3\nprint(len(set(prefixes)) == 1)'),
+  ],
+  "databases-python/connect-and-query": [
+    fill("Open an in-memory database.", "import sqlite3\nconn = sqlite3.___(':memory:')\nprint(conn.execute('SELECT 1').fetchone()[0])", [["connect"]],
+      "connect(':memory:') gives a real database that disappears when the program ends.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nprint(conn.execute('SELECT 1').fetchone()[0])"),
+  ],
+  "databases-python/sql-injection": [
+    fill("Pass the value as a parameter, not as text.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (c TEXT)')\nconn.execute('INSERT INTO t VALUES (___)', ('MKE',))\nprint(conn.execute('SELECT c FROM t').fetchone()[0])", [["?"]],
+      "The database never parses a parameter as SQL, so there is nothing to escape.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (c TEXT)')\nconn.execute('INSERT INTO t VALUES (?)', ('MKE',))\nprint(conn.execute('SELECT c FROM t').fetchone()[0])"),
+  ],
+  "databases-python/transactions": [
+    fill("Undo everything since the last commit.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (n INT)')\nconn.commit()\nconn.execute('INSERT INTO t VALUES (1)')\nconn.___()\nprint(conn.execute('SELECT COUNT(*) FROM t').fetchone()[0])", [["rollback"]],
+      "rollback throws the uncommitted work away, which is what a failed transfer needs.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (n INT)')\nconn.commit()\nconn.execute('INSERT INTO t VALUES (1)')\nconn.rollback()\nprint(conn.execute('SELECT COUNT(*) FROM t').fetchone()[0])"),
+  ],
+  "databases-python/schema-and-constraints": [
+    fill("Name the exception a broken constraint raises.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (c TEXT PRIMARY KEY)')\nconn.execute(\"INSERT INTO t VALUES ('MKE')\")\ntry:\n    conn.execute(\"INSERT INTO t VALUES ('MKE')\")\nexcept sqlite3.___:\n    print('rejected')", [["IntegrityError"]],
+      "IntegrityError is the database refusing to hold data that breaks your rules.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (c TEXT PRIMARY KEY)')\nconn.execute(\"INSERT INTO t VALUES ('MKE')\")\ntry:\n    conn.execute(\"INSERT INTO t VALUES ('MKE')\")\nexcept sqlite3.IntegrityError:\n    print('rejected')"),
+  ],
+  "databases-python/rows-to-objects": [
+    fill("Index a row by column name.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.row_factory = sqlite3.___\nconn.execute('CREATE TABLE t (city TEXT)')\nconn.execute(\"INSERT INTO t VALUES ('Madison')\")\nprint(conn.execute('SELECT city FROM t').fetchone()['city'])", [["Row"]],
+      "sqlite3.Row means adding a column no longer shifts every index after it.", "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.row_factory = sqlite3.Row\nconn.execute('CREATE TABLE t (city TEXT)')\nconn.execute(\"INSERT INTO t VALUES ('Madison')\")\nprint(conn.execute('SELECT city FROM t').fetchone()['city'])"),
+  ],
+  "databases-python/pandas-and-sql": [
+    fill("Read a query straight into a DataFrame.", "import sqlite3, pandas as pd\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (n INT)')\nconn.execute('INSERT INTO t VALUES (1)')\nprint(len(pd.___('SELECT n FROM t', conn)))", [["read_sql"]],
+      "Push filtering into SQL and pull back the smallest result that answers the question.", "import sqlite3, pandas as pd\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (n INT)')\nconn.execute('INSERT INTO t VALUES (1)')\nprint(len(pd.read_sql('SELECT n FROM t', conn)))"),
+  ],
+  "building-apis/your-first-endpoint": [
+    fill("Merge the code into the record the handler returns.", 'AIRPORTS = {"MKE": {"city": "Milwaukee"}}\ndef get(code):\n    return {"code": code, ___AIRPORTS[code]}\nprint(get("MKE"))', [["**"]],
+      "** unpacks the inner dict into the response body.", 'AIRPORTS = {"MKE": {"city": "Milwaukee"}}\ndef get(code):\n    return {"code": code, **AIRPORTS[code]}\nprint(get("MKE"))'),
+  ],
+  "building-apis/validating-input": [
+    fill("Collect every error rather than stopping at the first.", 'errors = []\nif len("x") != 3:\n    errors.___({"field": "code"})\nif 99 > 20:\n    errors.append({"field": "runways"})\nprint(len(errors))', [["append"]],
+      "Reporting one problem per submission is how you make an API miserable.", 'errors = []\nif len("x") != 3:\n    errors.append({"field": "code"})\nif 99 > 20:\n    errors.append({"field": "runways"})\nprint(len(errors))'),
+  ],
+  "building-apis/status-codes-and-errors": [
+    fill("Give the status for authenticated but not permitted.", 'def check(authed, allowed):\n    if not authed: return 401\n    if not allowed: return ___\n    return 200\nprint(check(True, False))', [["403"]],
+      "401 is who are you; 403 is we know, and you still may not.", 'def check(authed, allowed):\n    if not authed: return 401\n    if not allowed: return 403\n    return 200\nprint(check(True, False))'),
+  ],
+  "building-apis/dependencies-and-auth": [
+    fill("Compare a secret in constant time.", 'import hmac\nprint(hmac.___("sk-a", "sk-a"))', [["compare_digest"]],
+      "== short-circuits on the first differing byte, which leaks the value gradually.", 'import hmac\nprint(hmac.compare_digest("sk-a", "sk-a"))'),
+  ],
+  "building-apis/testing-your-api": [
+    fill("Check the response has the keys a caller depends on.", 'body = {"code": "MKE", "city": "Milwaukee"}\nprint({"code", "city"} ___ set(body))', [["<="]],
+      "Subset comparison asserts the shape without pinning fields that change.", 'body = {"code": "MKE", "city": "Milwaukee"}\nprint({"code", "city"} <= set(body))'),
+  ],
+  "shipping-python/dependencies-and-lockfiles": [
+    fill("Spot the requirement that is not pinned.", 'lines = ["fastapi==0.115.6", "requests"]\nprint([l for l in lines if "___" not in l])', [["=="]],
+      "An unpinned dependency means today's install can differ from tomorrow's.", 'lines = ["fastapi==0.115.6", "requests"]\nprint([l for l in lines if "==" not in l])'),
+  ],
+  "shipping-python/config-and-secrets": [
+    fill("Fail loudly when required config is missing.", 'import os\ntry:\n    os.environ___"DEFINITELY_NOT_SET_12345"]\nexcept KeyError:\n    print("refused to start")', [["["]],
+      "os.environ[...] raises; .get() would let a half-configured app boot.", 'import os\ntry:\n    os.environ["DEFINITELY_NOT_SET_12345"]\nexcept KeyError:\n    print("refused to start")'),
+  ],
+  "shipping-python/containers": [
+    fill("Bind so the container is reachable from outside.", 'host = "___"\nprint("reachable" if host == "0.0.0.0" else "unreachable")', [['0.0.0.0', '"0.0.0.0"']],
+      "127.0.0.1 inside a container means only the container itself.", 'host = "0.0.0.0"\nprint("reachable" if host == "0.0.0.0" else "unreachable")'),
+  ],
+  "shipping-python/health-and-shutdown": [
+    fill("Return unhealthy when any dependency is down.", 'checks = {"db": False, "cache": True}\nprint(200 if ___(checks.values()) else 503)', [["all"]],
+      "all() over the checks means one dead dependency fails the whole health response.", 'checks = {"db": False, "cache": True}\nprint(200 if all(checks.values()) else 503)'),
+  ],
 };

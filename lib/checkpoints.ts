@@ -424,4 +424,216 @@ export const MODULE_CHECKPOINTS: Record<string, CheckpointItem[]> = {
       runnable: 'def test_add():\n    assert 1 + 1 == 2\n\ntest_add()\nprint("ok")',
     },
   ],
+
+  "ai-python": [
+    {
+      kind: "mcq",
+      question: "Why is it dangerous to f-string user text straight into a system prompt?",
+      options: [
+        "It costs more tokens",
+        "The user's text becomes instructions the model may follow",
+        "It breaks JSON parsing",
+        "System prompts cannot contain variables",
+      ],
+      answer: 1,
+      explain:
+        "Instructions and untrusted text should live in different roles, with the untrusted part fenced, or the caller can redirect the model.",
+    },
+    {
+      kind: "mcq",
+      question: "A batch of 500 model calls dies on row 34. What was the mistake?",
+      options: [
+        "Not enough tokens",
+        "The try/except wrapped the whole loop instead of each item",
+        "The temperature was too high",
+        "The prompt was too short",
+      ],
+      answer: 1,
+      explain:
+        "Catch per item and collect failures, so one bad row is one bad row rather than the end of the run.",
+    },
+    {
+      kind: "mcq",
+      question: "Cosine similarity ignores vector magnitude. Why does that help?",
+      options: [
+        "It makes the math faster",
+        "A long and a short document about the same topic still look similar",
+        "It avoids division entirely",
+        "It guarantees a positive score",
+      ],
+      answer: 1,
+      explain: "Direction carries the meaning; length mostly carries how much text there was.",
+    },
+    {
+      kind: "fill",
+      prompt: "Compute cosine similarity between two vectors.",
+      template:
+        "import numpy as np\na = np.array([1.0, 0.0])\nb = np.array([1.0, 0.0])\nprint(float(np.dot(a, b) / (np.linalg.___(a) * np.linalg.___(b))))",
+      answers: [["norm"], ["norm"]],
+      explain: "np.linalg.norm is the vector length; dividing by both gives the angle.",
+      runnable:
+        "import numpy as np\na = np.array([1.0, 0.0])\nb = np.array([1.0, 0.0])\nprint(float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))))",
+    },
+    {
+      kind: "fill",
+      prompt: "Stop one failure from ending the whole batch.",
+      template:
+        "results, failures = [], []\nfor item in ['ok', 'BAD']:\n    ___:\n        if item == 'BAD':\n            raise ValueError('rate limited')\n        results.append(item)\n    except Exception as exc:\n        failures.append(exc)\nprint(len(results), len(failures))",
+      answers: [["try"]],
+      explain: "try inside the loop keeps the successes you already have.",
+      runnable:
+        "results, failures = [], []\nfor item in ['ok', 'BAD']:\n    try:\n        if item == 'BAD':\n            raise ValueError('rate limited')\n        results.append(item)\n    except Exception as exc:\n        failures.append(exc)\nprint(len(results), len(failures))",
+    },
+  ],
+  "databases-python": [
+    {
+      kind: "mcq",
+      question: "Why is cur.execute(f\"... WHERE name = '{name}'\") unsafe?",
+      options: [
+        "It is slower than a parameter",
+        "The value is parsed as SQL, so input can change the query",
+        "sqlite does not support f-strings",
+        "It uses more memory",
+      ],
+      answer: 1,
+      explain:
+        "With a parameter the database receives query and value separately, so the value can never be executed.",
+    },
+    {
+      kind: "mcq",
+      question: "Your script inserts in a loop, prints happily, exits, and the table is empty. Why?",
+      options: [
+        "The table was dropped",
+        "No commit, so the transaction was never made permanent",
+        "sqlite cannot insert in a loop",
+        "The rows went to a different table",
+      ],
+      answer: 1,
+      explain: "Nothing is durable until commit. `with conn:` does it for you on a clean exit.",
+    },
+    {
+      kind: "mcq",
+      question: "In sqlite, foreign keys are...",
+      options: [
+        "Always enforced",
+        "Off unless you set PRAGMA foreign_keys = ON per connection",
+        "Only available in Postgres",
+        "Enforced only inside a transaction",
+      ],
+      answer: 1,
+      explain:
+        "This is the classic sqlite trap: code that seems fine locally then fails on Postgres, which always enforces.",
+    },
+    {
+      kind: "fill",
+      prompt: "Insert a row safely, without string formatting.",
+      template:
+        "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (code TEXT)')\nconn.execute('INSERT INTO t VALUES (___)', ('MKE',))\nprint(conn.execute('SELECT code FROM t').fetchone()[0])",
+      answers: [["?"]],
+      explain: "The ? placeholder keeps the value out of the SQL text entirely.",
+      runnable:
+        "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.execute('CREATE TABLE t (code TEXT)')\nconn.execute('INSERT INTO t VALUES (?)', ('MKE',))\nprint(conn.execute('SELECT code FROM t').fetchone()[0])",
+    },
+    {
+      kind: "fill",
+      prompt: "Get rows you can index by column name instead of by number.",
+      template:
+        "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.row_factory = sqlite3.___\nconn.execute('CREATE TABLE t (city TEXT)')\nconn.execute(\"INSERT INTO t VALUES ('Milwaukee')\")\nprint(conn.execute('SELECT city FROM t').fetchone()['city'])",
+      answers: [["Row"]],
+      explain: "sqlite3.Row makes a column rename break loudly instead of silently shifting indexes.",
+      runnable:
+        "import sqlite3\nconn = sqlite3.connect(':memory:')\nconn.row_factory = sqlite3.Row\nconn.execute('CREATE TABLE t (city TEXT)')\nconn.execute(\"INSERT INTO t VALUES ('Milwaukee')\")\nprint(conn.execute('SELECT city FROM t').fetchone()['city'])",
+    },
+  ],
+  "building-apis": [
+    {
+      kind: "mcq",
+      question: "A caller sends a valid token but lacks permission. Which status?",
+      options: ["401", "403", "404", "422"],
+      answer: 1,
+      explain:
+        "401 means we do not know who you are. 403 means we do, and you still may not. Returning 401 sends them to debug the wrong problem.",
+    },
+    {
+      kind: "mcq",
+      question: "Why is returning 200 with {\"error\": \"...\"} a bad idea?",
+      options: [
+        "It uses more bandwidth",
+        "Callers must parse the body to learn it failed, and monitoring sees success",
+        "JSON cannot hold an error key",
+        "It breaks CORS",
+      ],
+      answer: 1,
+      explain: "The status code is the part every client and every dashboard reads first.",
+    },
+    {
+      kind: "mcq",
+      question: "Validation should collect every field error because...",
+      options: [
+        "It is faster",
+        "Reporting one problem per submission makes an API miserable to use",
+        "The spec requires it",
+        "Otherwise the request retries",
+      ],
+      answer: 1,
+      explain: "Fix-one-resubmit-find-another is the worst form filling experience there is.",
+    },
+    {
+      kind: "fill",
+      prompt: "Compare a secret without leaking it through timing.",
+      template:
+        "import hmac\nprint(hmac.___(\"sk-abc\", \"sk-abc\"))",
+      answers: [["compare_digest"]],
+      explain: "== returns early on the first differing byte, which leaks the value one character at a time.",
+      runnable: "import hmac\nprint(hmac.compare_digest(\"sk-abc\", \"sk-abc\"))",
+    },
+  ],
+  "shipping-python": [
+    {
+      kind: "mcq",
+      question: "Your container runs but nothing can reach it. Most likely cause?",
+      options: [
+        "Missing requirements.txt",
+        "It binds 127.0.0.1, which inside a container means only the container",
+        "The image is too small",
+        "No health check",
+      ],
+      answer: 1,
+      explain: "Bind 0.0.0.0 in a container. This is the most common 'it works but I cannot connect' bug.",
+    },
+    {
+      kind: "mcq",
+      question: "Why copy requirements.txt before copying your code in a Dockerfile?",
+      options: [
+        "Alphabetical order",
+        "Layer caching: changing one line of Python would otherwise reinstall every dependency",
+        "pip requires it",
+        "It makes the image smaller",
+      ],
+      answer: 1,
+      explain: "Builds go from seconds to minutes if the dependency layer is invalidated by every commit.",
+    },
+    {
+      kind: "mcq",
+      question: "A health check that always returns ok is worse than none because...",
+      options: [
+        "It uses CPU",
+        "The orchestrator keeps routing traffic to a process whose dependencies are dead",
+        "It fails the linter",
+        "It requires authentication",
+      ],
+      answer: 1,
+      explain: "A check that cannot fail is not a check. Separate liveness from readiness.",
+    },
+    {
+      kind: "fill",
+      prompt: "Refuse to start when required config is missing.",
+      template:
+        "env = {}\nmissing = [k for k in ('DATABASE_URL',) if k ___ env]\nprint('missing:', missing)",
+      answers: [["not in"]],
+      explain: "Validate at startup so a half-configured process never boots.",
+      runnable:
+        "env = {}\nmissing = [k for k in ('DATABASE_URL',) if k not in env]\nprint('missing:', missing)",
+    },
+  ],
 };
