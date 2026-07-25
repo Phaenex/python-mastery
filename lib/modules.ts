@@ -44,6 +44,12 @@ export const MODULE_METADATA: Omit<Module, "lessons">[] = [
       "Fetch data from APIs, parse JSON responses, and scrape web content with BeautifulSoup.",
   },
   {
+    slug: "databases-python",
+    title: "Databases from Python",
+    description:
+      "Connect, query, and write with sqlite3: parameters instead of f-strings, transactions that roll back cleanly, constraints the database enforces itself, rows as objects, and where to draw the line between SQL and pandas. Real SQL, running for real in your browser.",
+  },
+  {
     slug: "functions-apply",
     title: "Functions & Apply",
     description:

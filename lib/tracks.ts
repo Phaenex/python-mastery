@@ -77,6 +77,7 @@ export const TRACKS: Track[] = [
       "grouping-combining",
       "functions-apply",
       "data-manipulation-school",
+      "databases-python",
     ],
     projects: ["building-permits", "survey-explorer", "sales-dashboard"],
     requires: ["foundations"],
