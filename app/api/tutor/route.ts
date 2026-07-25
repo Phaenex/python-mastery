@@ -2,14 +2,47 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
-// Lazy so the build doesn't crash when OPENAI_API_KEY isn't set yet.
-let _openai: OpenAI | null = null;
-function getOpenAI(): OpenAI | null {
-  if (_openai) return _openai;
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  _openai = new OpenAI({ apiKey });
-  return _openai;
+// The tutor runs through OpenRouter, which is OpenAI-wire-compatible, so the same SDK
+// works with a different baseURL. A direct OPENAI_API_KEY still works if that is what
+// is configured; OpenRouter wins when both are present.
+//
+// Model is overridable with TUTOR_MODEL. The default is deliberately a small, cheap
+// model: this answers "nudge me toward the answer" questions on a personal learning
+// site, not hard reasoning, and it is called once per user message.
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+
+// Lazy so the build doesn't crash when no key is set yet.
+let _client: { client: OpenAI; model: string } | null = null;
+function getTutorClient(): { client: OpenAI; model: string } | null {
+  if (_client) return _client;
+
+  const routerKey = process.env.OPENROUTER_API_KEY;
+  if (routerKey) {
+    _client = {
+      client: new OpenAI({
+        apiKey: routerKey,
+        baseURL: OPENROUTER_BASE_URL,
+        // OpenRouter uses these for attribution on its dashboard. Neither is required
+        // and neither carries user content.
+        defaultHeaders: {
+          "HTTP-Referer": "https://damato-python.vercel.app",
+          "X-Title": "python-mastery tutor",
+        },
+      }),
+      model: process.env.TUTOR_MODEL || DEFAULT_OPENROUTER_MODEL,
+    };
+    return _client;
+  }
+
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) return null;
+  _client = {
+    client: new OpenAI({ apiKey: openaiKey }),
+    model: process.env.TUTOR_MODEL || DEFAULT_OPENAI_MODEL,
+  };
+  return _client;
 }
 
 interface TutorRequest {
@@ -71,8 +104,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "missing required fields: messages, context" }, { status: 400 });
     }
 
-    const openai = getOpenAI();
-    if (!openai) {
+    const tutor = getTutorClient();
+    if (!tutor) {
       return NextResponse.json(
         { error: "AI tutor is not configured on this deployment." },
         { status: 503 },
@@ -88,8 +121,8 @@ export async function POST(request: NextRequest) {
       .replace("{currentCode}", context.currentCode || "(no code yet)")
       .replace("{errorContext}", errorContext);
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const completion = await tutor.client.chat.completions.create({
+      model: tutor.model,
       messages: [
         { role: "system", content: systemPrompt },
         ...messages.map((m) => ({
@@ -116,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     const reason =
       status === 401
-        ? "the configured OPENAI_API_KEY was rejected"
+        ? "the configured tutor API key was rejected"
         : status === 429
           ? "rate limited or out of quota"
           : status === 404
