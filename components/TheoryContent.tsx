@@ -151,7 +151,10 @@ function CodeBlock({ children, className }: { children: React.ReactNode; classNa
   }, [code, language]);
 
   return (
-    <pre className="code-block">
+    // A horizontally scrollable region needs to be reachable by keyboard, or someone
+    // who cannot use a pointer can never scroll it. tabIndex makes it focusable and
+    // the role/label tell a screen reader what it just landed in.
+    <pre className="code-block" tabIndex={0} role="group" aria-label="Code example, scrollable">
       <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
     </pre>
   );

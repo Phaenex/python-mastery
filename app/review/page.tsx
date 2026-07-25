@@ -94,7 +94,7 @@ function ReviewSession() {
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 font-mono text-xs">
         <p className="text-muted-foreground">
           <span className="text-accent">review {index + 1}</span>/{items.length}
-          <span className="ml-3 text-muted-foreground/70">interleaved · from memory</span>
+          <span className="ml-3 text-muted">interleaved · from memory</span>
         </p>
         <button
           type="button"
@@ -133,6 +133,7 @@ export default function ReviewPage() {
           </div>
         </header>
         <main id="main" tabIndex={-1} className="flex-1 max-w-3xl mx-auto w-full px-6 py-10">
+          <h1 className="sr-only">Review — spaced repetition</h1>
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-1"># mixed review</p>
           <p className="font-mono text-[11px] text-muted-foreground mb-6">
             spaced repetition across modules. solve from memory. each one re-solved

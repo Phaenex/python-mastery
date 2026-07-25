@@ -325,8 +325,11 @@ function ErrorDisplay({ parsedError }: { parsedError: { type: string; message: s
       <div className="flex items-center justify-between px-4 py-2.5 bg-error/10 border-b border-error/20">
         <div className="flex items-center gap-2">
           <span className="text-error font-semibold">{parsedError.type}</span>
+          {/* A solid background, not a translucent one: bg-error/20 sits inside an
+              already error-tinted panel, so the tints compounded to #603539 and the
+              label measured 3.67:1 against it. */}
           {parsedError.lineInfo && (
-            <span className="px-2 py-0.5 rounded bg-error/20 text-error text-xs">
+            <span className="px-2 py-0.5 rounded bg-[#3a1f22] text-error text-xs">
               {parsedError.lineInfo}
             </span>
           )}
@@ -407,6 +410,9 @@ export function OutputPanel({ output, error, isRunning, executionTime, activeCha
       </div>
 
       <div
+        // Scrollable by pointer, so it must be reachable by keyboard: output can be
+        // longer than the pane and a keyboard user could not scroll it otherwise.
+        tabIndex={0}
         className="flex-1 overflow-auto p-4 font-mono text-sm output-content"
         role="status"
         aria-live="polite"

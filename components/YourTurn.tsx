@@ -27,7 +27,7 @@ function FillCard({ item, index }: { item: FillItem; index: number }) {
         <span className="font-mono text-xs text-accent">your turn{blankCount > 1 ? ` (${index + 1})` : ""} · </span>
         {item.prompt}
       </p>
-      <pre className="mt-3 overflow-x-auto rounded bg-[#0f0f12] border border-border p-3 font-mono text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
+      <pre className="mt-3 overflow-x-auto rounded bg-[#0f0f12] border border-border p-3 font-mono text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed" tabIndex={0} role="group" aria-label="Code block, scrollable">
         {parts.map((seg, i) => (
           <span key={i}>
             {seg}

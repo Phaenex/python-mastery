@@ -7,14 +7,14 @@
   --card-hover: #1f1f23;
   --border: #27272a;
   --border-hover: #3f3f46;
-  --muted: #71717a;
+  --muted: #8b8b95; /* was #71717a: 4.09 on --background, under the 4.5 AA floor */
   --muted-foreground: #a1a1aa;
-  --accent: #a855f7;
+  --accent: #b57cf9; /* was #a855f7: 4.04-4.48 on real backgrounds, under the 4.5 AA floor */
   --accent-hover: #9333ea;
   --accent-muted: #7c3aed;
   --accent-bg: rgba(168, 85, 247, 0.1);
   --success: #22c55e;
-  --error: #ef4444;
+  --error: #f87171; /* was #ef4444: 4.71 on card, fails once it sits on an error-tinted panel */
   --warning: #f59e0b;
 }
 
@@ -493,4 +493,37 @@ nav a:hover {
     animation: none \!important;
     opacity: 1 \!important;
   }
+}
+
+/* Mobile legibility floor.
+   Measured at 390px: hint lines on /learn sit at 10px and several stats notes at 11px,
+   set with explicit Tailwind arbitrary values (text-[10px], text-[11px]). That density
+   reads fine on a desktop where these are dense supporting metadata beside the thing
+   they describe; on a phone they were the smallest text on the page. Raise the floor to
+   12px below the sm breakpoint without touching desktop density. */
+@media (max-width: 639px) {
+  .text-\[10px\],
+  .text-\[11px\] {
+    font-size: 12px;
+  }
+}
+
+/* Links inside a text block must be distinguishable without colour (WCAG 1.4.1).
+   These were colour-only with underline on hover, which does not help someone who
+   cannot see the colour difference and is not hovering. Standalone links in navs and
+   lists are exempt and are left alone. */
+/* Excluding by class was too clever: these links carry `rounded` purely for their focus
+   ring, so the exclusion skipped exactly the prose links that needed underlining. Opt OUT
+   explicitly with .link-plain on the handful that really are button-shaped. */
+p a:not(.link-plain),
+li a:not(.link-plain) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Small text links sat at 16px tall, under the WCAG 2.2 24px minimum target size.
+   Padding rather than font-size keeps the visual density. */
+p a,
+li > a {
+  padding-block: 0.15rem;
 }

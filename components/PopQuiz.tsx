@@ -158,7 +158,7 @@ function PopCard({
         {fill && (
           <>
             <p className="text-sm text-foreground">{fill.prompt}</p>
-            <pre className="mt-2 overflow-x-auto rounded bg-[#0f0f12] border border-border p-2 text-xs text-foreground/90 whitespace-pre-wrap">
+            <pre className="mt-2 overflow-x-auto rounded bg-[#0f0f12] border border-border p-2 text-xs text-foreground/90 whitespace-pre-wrap" tabIndex={0} role="group" aria-label="Code block, scrollable">
               {fill.template.split("___")[0]}
               <input
                 aria-label="fill the blank"

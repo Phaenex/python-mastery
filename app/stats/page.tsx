@@ -192,6 +192,7 @@ export default function StatsPage() {
       </header>
 
       <main id="main" tabIndex={-1} className="flex-1 max-w-5xl mx-auto w-full px-6 py-10 font-mono">
+        <h1 className="sr-only">Your stats — XP, streak and progress</h1>
         <section className="text-sm">
           <p>
             <span className="text-accent">damato@python</span>
@@ -309,7 +310,7 @@ export default function StatsPage() {
 
             <section className="mt-10">
               <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                # checkpoints <span className="text-muted-foreground/60">[{checkpointsDone}/{checkpointRows.length} done{checkpointsDue > 0 ? ` · ${checkpointsDue} due to review` : ""}]</span>
+                # checkpoints <span className="text-muted">[{checkpointsDone}/{checkpointRows.length} done{checkpointsDue > 0 ? ` · ${checkpointsDue} due to review` : ""}]</span>
               </p>
               <ul className="mt-3 text-xs grid sm:grid-cols-2 gap-x-6 gap-y-1">
                 {checkpointRows.map((c) => (
@@ -384,7 +385,7 @@ export default function StatsPage() {
                   ))}
                 </ul>
               )}
-              <p className="mt-3 text-[11px] text-muted-foreground/70">
+              <p className="mt-3 text-[11px] text-muted">
                 <Link href="/review" className="text-accent hover:underline">
                   start mixed review →
                 </Link>{" "}

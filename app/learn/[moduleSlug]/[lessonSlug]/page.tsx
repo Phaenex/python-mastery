@@ -307,7 +307,7 @@ export default function LessonPage({ params }: LessonPageProps) {
               {lesson.examples.length > 0 && (
                 <section id="examples" className="scroll-mt-32">
                   <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
-                    # examples <span className="text-muted-foreground/70">[{lesson.examples.length}]</span>
+                    # examples <span className="text-muted">[{lesson.examples.length}]</span>
                   </p>
                   <div className="space-y-6">
                     {lesson.examples.map((example, idx) => (
@@ -328,7 +328,7 @@ export default function LessonPage({ params }: LessonPageProps) {
               {hasChallenges && (
                 <section id="challenges" className="scroll-mt-32">
                   <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
-                    # challenges <span className="text-muted-foreground/70">[{totalChallenges}]</span>
+                    # challenges <span className="text-muted">[{totalChallenges}]</span>
                   </p>
                   <div className="space-y-6">
                     {lesson.challenges.map((challenge, idx) => (

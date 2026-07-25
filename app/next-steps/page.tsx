@@ -48,7 +48,7 @@ export default function NextStepsPage() {
           <p className="mt-3 text-muted-foreground leading-relaxed">
             Make a file called <code className="text-foreground">hello.py</code>, put <code className="text-foreground">print(&quot;hello&quot;)</code> in it, and run it from the terminal:
           </p>
-          <pre className="mt-3 p-3 rounded bg-card border border-border/60 text-foreground overflow-x-auto">python3 hello.py</pre>
+          <pre className="mt-3 p-3 rounded bg-card border border-border/60 text-foreground overflow-x-auto" tabIndex={0} role="group" aria-label="Code block, scrollable">python3 hello.py</pre>
           <p className="mt-3 text-muted-foreground">That is the same code you wrote here, now running for real on your computer.</p>
         </section>
 
@@ -58,7 +58,7 @@ export default function NextStepsPage() {
             The Tooling module covers this in depth. The short version: each project gets its own virtual
             environment so their libraries do not fight.
           </p>
-          <pre className="mt-3 p-3 rounded bg-card border border-border/60 text-foreground overflow-x-auto">{`python3 -m venv .venv
+          <pre className="mt-3 p-3 rounded bg-card border border-border/60 text-foreground overflow-x-auto" tabIndex={0} role="group" aria-label="Code block, scrollable">{`python3 -m venv .venv
 source .venv/bin/activate     # Windows: .venv\\Scripts\\activate
 pip install pandas requests`}</pre>
         </section>

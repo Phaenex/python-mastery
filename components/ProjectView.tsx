@@ -110,7 +110,7 @@ export function ProjectView({
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <aside className="w-64 flex-shrink-0 border-r border-border bg-card overflow-y-auto font-mono text-sm">
+      <aside aria-label="Project steps" className="w-64 flex-shrink-0 border-r border-border bg-card overflow-y-auto font-mono text-sm">
         <div className="p-4 border-b border-border">
           <Link
             href="/projects"
@@ -173,7 +173,7 @@ export function ProjectView({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-2.5 border-b border-border bg-card font-mono text-xs">
+        <header aria-label="Project progress" className="flex items-center justify-between px-6 py-2.5 border-b border-border bg-card font-mono text-xs">
           <span className="text-muted-foreground">
             <span className="text-accent">step</span> {String(currentStepIndex + 1).padStart(2, "0")}/{String(project.steps.length).padStart(2, "0")}
           </span>
@@ -195,12 +195,13 @@ export function ProjectView({
               next →
             </button>
           </div>
-        </div>
+        </header>
 
         {/* Split View */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Instructions */}
-          <div className="w-1/2 flex flex-col border-r border-border overflow-hidden">
+          <main id="main" tabIndex={-1} aria-label="Step instructions" className="w-1/2 flex flex-col border-r border-border overflow-hidden">
+            {/* Scrolls independently; the landmark is the column itself. */}
             <div className="flex-1 overflow-y-auto p-6">
               <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2"># brief</p>
               <div className="flex items-baseline gap-2 mb-4">
@@ -240,7 +241,13 @@ export function ProjectView({
               {showDataPreview && (
                 <div className="mt-6 font-mono text-xs">
                   <p className="text-muted-foreground mb-2"># {project.datasetName}.head()</p>
-                  <div className="overflow-x-auto border border-border rounded">
+                  {/* Scrollable by pointer, so it needs to be reachable by keyboard too. */}
+                  <div
+                    className="overflow-x-auto border border-border rounded"
+                    tabIndex={0}
+                    role="group"
+                    aria-label="Dataset preview, scrollable"
+                  >
                     <table className="text-[11px]">
                       <thead className="bg-background">
                         <tr>
@@ -276,10 +283,10 @@ export function ProjectView({
                 </div>
               )}
             </div>
-          </div>
+          </main>
 
           {/* Right Panel - Editor & Output */}
-          <div className="w-1/2 flex flex-col overflow-hidden">
+          <aside aria-label="Editor and output" className="w-1/2 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card font-mono text-xs">
               <div className="flex items-center gap-2">
                 {isLoading ? (
@@ -333,7 +340,7 @@ export function ProjectView({
             <div className="h-48 p-4 pt-2">
               <OutputPanel output={output} error={error} isRunning={isRunning} executionTime={executionTime} />
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

@@ -51,7 +51,7 @@ export function Sidebar({ module, completedLessons }: SidebarProps) {
               <li key={lesson.slug}>
                 <Link
                   href={lessonPath}
-                  className={`flex items-baseline gap-2 px-2 py-1.5 rounded text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                  className={`flex items-baseline gap-2 px-2 py-1.5 min-h-6 rounded text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                     isActive
                       ? "bg-accent/10 text-accent"
                       : "text-muted-foreground hover:text-foreground hover:bg-card-hover"
@@ -76,7 +76,7 @@ export function Sidebar({ module, completedLessons }: SidebarProps) {
 
       <Link
         href="/learn"
-        className="mt-1 block px-2 text-[11px] text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded"
+        className="mt-1 block px-2 py-1 min-h-6 text-[11px] text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded"
       >
         ← cd ~/lessons
       </Link>

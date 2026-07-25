@@ -10,6 +10,9 @@ export default function NotFound() {
   return (
     <main id="main" tabIndex={-1} className="min-h-screen flex flex-col bg-background text-foreground font-mono text-sm">
       <section className="flex-1 max-w-3xl mx-auto w-full px-6 py-16">
+        {/* The page states the error as shell output by design, so the heading is for
+            assistive tech only. Without it the 404 had no h1 and announced nothing. */}
+        <h1 className="sr-only">Page not found</h1>
         <p>
           <span className="text-accent">damato@python</span>
           <span className="text-muted-foreground">:</span>

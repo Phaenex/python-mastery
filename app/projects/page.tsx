@@ -50,6 +50,7 @@ export default function ProjectsPage() {
       </header>
 
       <main id="main" tabIndex={-1} className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
+        <h1 className="sr-only">Projects</h1>
         <section className="font-mono text-sm">
           <p>
             <span className="text-accent">damato@python</span>

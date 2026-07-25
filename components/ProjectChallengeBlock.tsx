@@ -237,7 +237,7 @@ export default function ProjectChallengeBlock({
                   <span className="text-muted-foreground"># solution</span>
                   <CopyButton text={projectChallenge.solution} />
                 </div>
-                <pre className="p-3 text-xs text-foreground font-mono overflow-x-auto">
+                <pre className="p-3 text-xs text-foreground font-mono overflow-x-auto" tabIndex={0} role="group" aria-label="Code block, scrollable">
                   {projectChallenge.solution}
                 </pre>
               </div>

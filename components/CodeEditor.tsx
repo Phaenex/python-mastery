@@ -300,7 +300,10 @@ export function CodeEditor({
       <div className="flex h-full">
         <div
           ref={lineNumbersRef}
-          className="line-numbers flex-shrink-0 py-4 px-2 text-right select-none overflow-hidden text-muted-foreground/60 text-sm font-mono border-r border-border/50 bg-[#1a1a1f]"
+          // Purely decorative: the line numbers duplicate position information the
+          // editor already exposes, so announcing them is noise.
+          aria-hidden="true"
+          className="line-numbers flex-shrink-0 py-4 px-2 text-right select-none overflow-hidden text-muted text-sm font-mono border-r border-border/50 bg-[#1a1a1f]"
           style={{ width: "3.5rem" }}
         >
           {lineNumbers.map((num) => (

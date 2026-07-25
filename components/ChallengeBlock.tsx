@@ -263,7 +263,7 @@ export default function ChallengeBlock({
             ever fires. Leaving that implicit means a learner waits for feedback that
             is never coming and assumes they did something wrong.
           */}
-          <p className="text-warning/70">
+          <p className="text-warning">
             that also means this one cannot be auto-checked here. work through it on your
             machine and compare against the solution when you are done.
           </p>
@@ -384,7 +384,7 @@ export default function ChallengeBlock({
             ) : (
               <div className="space-y-1">
                 <label className="text-muted-foreground" htmlFor={`why-${challenge.id}`}>
-                  why does this work? <span className="text-muted-foreground/60">(for you, saved locally, never sent)</span>
+                  why does this work? <span className="text-muted">(for you, saved locally, never sent)</span>
                 </label>
                 <textarea
                   id={`why-${challenge.id}`}
@@ -461,7 +461,7 @@ export default function ChallengeBlock({
               <span className="text-muted-foreground"># solution</span>
               <CopyButton text={challenge.solution} />
             </div>
-            <pre className="p-3 text-xs text-foreground font-mono overflow-x-auto">
+            <pre className="p-3 text-xs text-foreground font-mono overflow-x-auto" tabIndex={0} role="group" aria-label="Code block, scrollable">
               {challenge.solution}
             </pre>
           </div>

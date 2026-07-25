@@ -29,6 +29,10 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground font-mono text-sm">
       <main id="main" tabIndex={-1} className="flex-1 max-w-3xl mx-auto w-full px-6 py-12 sm:py-16">
+        {/* The page leads with a terminal prompt by design, so the h1 is for assistive
+            tech only. Without it this page had no h1 at all and screen-reader users got
+            no page heading. */}
+        <h1 className="sr-only">python-mastery — learn Python by writing it</h1>
         <section className="flex flex-wrap items-baseline justify-between gap-3">
           <div className="flex-1 min-w-0">
             <HomeTerminal modules={modules} />
@@ -77,16 +81,24 @@ export default function Home() {
                 <li key={m.slug} className="flex items-center gap-1">
                   <Link
                     href={`/learn/${m.slug}/${m.firstLesson}`}
-                    className="group grid flex-1 grid-cols-[2.5rem_minmax(0,1fr)_5rem_7rem_1rem] gap-3 items-center py-2 px-2 -ml-2 rounded hover:bg-card/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    // The five fixed columns total ~296px of track plus gaps, which cannot
+                    // fit a 320px viewport (400% zoom), so the row pushed the page into
+                    // horizontal scroll. Below sm the lesson count and status drop out of
+                    // the grid and ride under the title instead; both are still present in
+                    // the accessible name and reappear from sm up.
+                    className="group grid flex-1 grid-cols-[2rem_minmax(0,1fr)_1rem] sm:grid-cols-[2.5rem_minmax(0,1fr)_5rem_7rem_1rem] gap-2 sm:gap-3 items-center py-2 px-2 -ml-2 rounded hover:bg-card/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     aria-label={`Open module ${m.title}`}
                   >
                     <span className="text-muted-foreground">{m.num}</span>
                     <span className="min-w-0 truncate">
                       <span className="text-foreground">modules/{m.title}/</span>
                       <span className="text-muted-foreground hidden md:inline">  {m.desc}</span>
+                      <span className="block sm:hidden text-xs text-muted-foreground">
+                        {m.lessons} lessons · <span className={statusClass}>{status}</span>
+                      </span>
                     </span>
-                    <span className="text-muted-foreground text-xs">{m.lessons} lessons</span>
-                    <span className={`text-xs ${statusClass}`}>{status}</span>
+                    <span className="hidden sm:block text-muted-foreground text-xs">{m.lessons} lessons</span>
+                    <span className={`hidden sm:block text-xs ${statusClass}`}>{status}</span>
                     <span className="text-muted-foreground group-hover:text-accent transition-colors">→</span>
                   </Link>
                   <DownloadNotesButton module={fullModules[idx]} compact />

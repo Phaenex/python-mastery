@@ -102,7 +102,7 @@ function FillBlock({
     <fieldset className="rounded border border-border bg-card/40 p-4">
       <legend className="px-1 font-mono text-xs text-muted-foreground">fill in the blank · question {index + 1}</legend>
       <p className="text-sm text-foreground">{item.prompt}</p>
-      <pre className="mt-3 overflow-x-auto rounded bg-[#0f0f12] border border-border p-3 font-mono text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
+      <pre className="mt-3 overflow-x-auto rounded bg-[#0f0f12] border border-border p-3 font-mono text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed" tabIndex={0} role="group" aria-label="Code block, scrollable">
         {parts.map((seg, i) => (
           <span key={i}>
             {seg}
