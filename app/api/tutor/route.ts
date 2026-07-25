@@ -105,9 +105,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ content });
   } catch (err) {
     console.error("[tutor] api error:", err);
+
+    // Surface enough to tell the failure modes apart without leaking the key or the
+    // prompt. Previously every upstream problem collapsed into one generic 500, so a
+    // dead key, an exhausted quota and a retired model were indistinguishable from the
+    // client and the cause had to be guessed at. Status and type only; no message body
+    // from upstream, since that can echo request content back.
+    const e = err as { status?: number; type?: string; code?: string };
+    const status = typeof e?.status === "number" ? e.status : undefined;
+
+    const reason =
+      status === 401
+        ? "the configured OPENAI_API_KEY was rejected"
+        : status === 429
+          ? "rate limited or out of quota"
+          : status === 404
+            ? "the configured model is unavailable to this key"
+            : "upstream request failed";
+
     return NextResponse.json(
-      { error: "tutor request failed. try again in a moment." },
-      { status: 500 },
+      {
+        error: `tutor unavailable: ${reason}.`,
+        upstreamStatus: status ?? null,
+        upstreamCode: e?.code ?? e?.type ?? null,
+      },
+      { status: 502 },
     );
   }
 }
