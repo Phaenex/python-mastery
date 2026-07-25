@@ -44,6 +44,12 @@ export const MODULE_METADATA: Omit<Module, "lessons">[] = [
       "Fetch data from APIs, parse JSON responses, and scrape web content with BeautifulSoup.",
   },
   {
+    slug: "building-apis",
+    title: "Building APIs",
+    description:
+      "The other side of the web-apis module: being the service instead of calling one. Routing, validating at the edge, status codes that mean something, dependencies and auth, and testing handlers without ever starting a server.",
+  },
+  {
     slug: "databases-python",
     title: "Databases from Python",
     description:
@@ -84,6 +90,12 @@ export const MODULE_METADATA: Omit<Module, "lessons">[] = [
     title: "Data Manipulation (WCTC)",
     description:
       "String cleaning, number formatting, date parsing, combining DataFrames, and pivot tables. Exactly what the WCTC Python Data Manipulation course covers.",
+  },
+  {
+    slug: "shipping-python",
+    title: "Shipping Python",
+    description:
+      "Getting it off your machine: pinned dependencies and lockfiles, config from the environment with secrets that never reach git, containers that build fast and do not run as root, health checks that tell the truth, and shutting down without dropping requests.",
   },
   {
     slug: "oop-tooling",

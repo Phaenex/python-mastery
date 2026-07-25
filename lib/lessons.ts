@@ -12,6 +12,8 @@ import { lessonsModule7 } from "./lessons/module7";
 import { lessonsModuleNumpy } from "./lessons/moduleNumpy";
 import { lessonsModuleAi } from "./lessons/moduleAi";
 import { lessonsModuleDatabases } from "./lessons/moduleDatabases";
+import { lessonsModuleApis } from "./lessons/moduleApis";
+import { lessonsModuleShipping } from "./lessons/moduleShipping";
 import { lessonsModule8 } from "./lessons/module8";
 import { lessonsModule9 } from "./lessons/module9";
 import { lessonsModuleOop } from "./lessons/moduleOop";
@@ -26,6 +28,7 @@ const ALL_LESSONS: Lesson[] = [
   ...lessonsModule5,
   ...lessonsModule6,
   ...lessonsModule7,
+  ...lessonsModuleApis,
   ...lessonsModuleDatabases,
   ...lessonsModuleCore,
   ...lessonsModuleNumpy,
@@ -33,6 +36,7 @@ const ALL_LESSONS: Lesson[] = [
   ...lessonsModule8,
   ...lessonsModule9,
   ...lessonsModuleOop,
+  ...lessonsModuleShipping,
   ...lessonsModuleTooling,
 ];
 

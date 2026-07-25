@@ -1,11 +1,15 @@
 import type { Lesson } from "../types";
 
-// AI engineering track. Pyodide has no network, so nothing here calls a real API.
-// That is a feature, not a workaround: the parts of AI work that actually break in
-// production are prompt construction, parsing, batching, cost, retrieval ranking, and
-// testing, and every one of those is computable offline. numpy ships with Pyodide, so
-// the embedding and retrieval lessons run real vector math rather than hand-waving it.
-// Lessons that genuinely need a key or a socket say so and stay read-and-understand.
+// AI engineering track. Almost all of it runs offline, and that is a feature rather
+// than a workaround: the parts of this work that actually break in production are
+// prompt construction, parsing, batching, cost, retrieval ranking and testing, and
+// every one of those computes locally. numpy ships with Pyodide, so the embedding and
+// retrieval lessons run real vector math rather than hand-waving it.
+//
+// The exception is "a-real-call", which genuinely leaves the browser. Pyodide cannot
+// hold an API key but it can pyfetch a same-origin URL, so that lesson posts to
+// /api/ai-demo, which holds the key server-side. It exists so latency, real token
+// usage and a real 429 are felt once rather than only described.
 
 export const lessonsModuleAi: Lesson[] = [
   {
@@ -922,6 +926,130 @@ print("passed:", check_golden(replies))`,
     module: "AI Engineering",
     moduleSlug: "ai-python",
     lessonNumber: 9,
+    slug: "a-real-call",
+    title: "Actually Call a Model",
+    badge: "challenge",
+    theory: `
+Everything so far ran offline. That was deliberate, because the parts that break in
+production are prompt construction, parsing, batching, cost and retrieval, and all of
+those compute locally. But you have never felt real latency or a real failure, and those
+teach something a simulation cannot.
+
+This lesson makes a real call. The browser cannot hold an API key, so it goes to a small
+endpoint on this site which holds the key server-side and forwards a tightly limited
+request. That is the same pattern you would use for any browser app: **the key lives on
+your server, never in the client.**
+
+\`pyodide.http.pyfetch\` is Python's way to make an HTTP request in the browser. It is
+async, so these calls need \`await\`.
+
+\`\`\`python
+from pyodide.http import pyfetch
+import json
+
+res = await pyfetch(
+    "/api/ai-demo",
+    method="POST",
+    headers={"Content-Type": "application/json"},
+    body=json.dumps({"prompt": "Name one Wisconsin airport code."}),
+)
+data = await res.json()
+print(data["content"])
+\`\`\`
+
+The response carries three things worth looking at beyond the answer: \`usage\` with the
+real token counts, \`latency_ms\`, and \`model\`. That turns the tokens-and-cost lesson from
+arithmetic into a measurement of your own prompt.
+
+⚠️ Warning: this is a shared demo endpoint spending real money. It is rate limited, caps
+the prompt at 400 characters, and caps the reply at 120 tokens. A 429 here is the system
+working, not a bug, and handling it is exactly the batching lesson.
+
+💡 Key: notice how much slower this is than everything else you have run. That number is
+why the concurrency lesson exists.
+`,
+    starterCode: `from pyodide.http import pyfetch
+import json
+
+res = await pyfetch(
+    "/api/ai-demo",
+    method="POST",
+    headers={"Content-Type": "application/json"},
+    body=json.dumps({"prompt": "Name one airport code in Wisconsin. Two sentences max."}),
+)
+data = await res.json()
+
+print("status:", res.status)
+print("reply:", data.get("content"))
+print("usage:", data.get("usage"))
+print("latency_ms:", data.get("latency_ms"))
+`,
+    examples: [
+      {
+        title: "Reading the real token usage",
+        explanation: "The cost lesson stops being hypothetical once these are your own numbers",
+        code: `usage = {"prompt_tokens": 48, "completion_tokens": 21}
+IN_RATE, OUT_RATE = 3.00 / 1_000_000, 15.00 / 1_000_000
+cost = usage["prompt_tokens"] * IN_RATE + usage["completion_tokens"] * OUT_RATE
+print(f"that call cost about \${cost:.6f}")`,
+      },
+      {
+        title: "A 429 is the system working",
+        explanation: "Handle it the way the batching lesson taught, not by retrying instantly",
+        code: `status = 429
+print("back off and retry" if status == 429 else "carry on")`,
+      },
+    ],
+    challenges: [
+      {
+        id: "ai9r1",
+        prompt:
+          "Make a real call to /api/ai-demo asking for one Wisconsin airport code, and print the reply along with 'status: 200'. This one genuinely leaves your browser, so it will take a second or two.",
+        hint: "Use await pyfetch with method POST, a JSON body containing your prompt, then await res.json().",
+        validateFn: `return /status:\\s*200/.test(output) && output.length > 30`,
+        solution: `from pyodide.http import pyfetch
+import json
+
+res = await pyfetch(
+    "/api/ai-demo",
+    method="POST",
+    headers={"Content-Type": "application/json"},
+    body=json.dumps({"prompt": "Name one airport code in Wisconsin. Two sentences max."}),
+)
+data = await res.json()
+print("status:", res.status)
+print("reply:", data.get("content"))`,
+      },
+      {
+        id: "ai9r2",
+        prompt:
+          "Now measure it. Make the call, read usage from the response, and print the real cost of your own prompt formatted as 'cost: $0.000000' using the rates in the examples. Also print the latency.",
+        hint: "usage['prompt_tokens'] * IN_RATE + usage['completion_tokens'] * OUT_RATE, printed with :.6f.",
+        validateFn: `return /cost:\\s*\\$\\d\\.\\d{6}/.test(output) && /latency/i.test(output)`,
+        solution: `from pyodide.http import pyfetch
+import json
+
+IN_RATE, OUT_RATE = 3.00 / 1_000_000, 15.00 / 1_000_000
+
+res = await pyfetch(
+    "/api/ai-demo",
+    method="POST",
+    headers={"Content-Type": "application/json"},
+    body=json.dumps({"prompt": "Name one airport code in Wisconsin."}),
+)
+data = await res.json()
+u = data["usage"]
+cost = (u["prompt_tokens"] or 0) * IN_RATE + (u["completion_tokens"] or 0) * OUT_RATE
+print(f"cost: \${cost:.6f}")
+print("latency_ms:", data.get("latency_ms"))`,
+      },
+    ],
+  },
+
+  {
+    module: "AI Engineering",
+    moduleSlug: "ai-python",
+    lessonNumber: 10,
     slug: "concurrency",
     title: "Stop Waiting: Concurrent Calls",
     badge: "practice",
@@ -1027,7 +1155,7 @@ print(f"{speedup(500, 2.0, 10):.0f}s")`,
   {
     module: "AI Engineering",
     moduleSlug: "ai-python",
-    lessonNumber: 10,
+    lessonNumber: 11,
     slug: "streaming",
     title: "Streaming: Tokens As They Arrive",
     badge: "practice",
@@ -1125,7 +1253,7 @@ print(is_complete("The code MKE serves Milwaukee."))`,
   {
     module: "AI Engineering",
     moduleSlug: "ai-python",
-    lessonNumber: 11,
+    lessonNumber: 12,
     slug: "agent-loops",
     title: "Agent Loops: More Than One Turn",
     badge: "challenge",
@@ -1262,7 +1390,7 @@ print(run_capped(3))`,
   {
     module: "AI Engineering",
     moduleSlug: "ai-python",
-    lessonNumber: 12,
+    lessonNumber: 13,
     slug: "prompt-caching",
     title: "Caching: Stop Paying for the Same Tokens",
     badge: "practice",
