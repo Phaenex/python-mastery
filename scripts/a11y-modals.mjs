@@ -36,6 +36,27 @@ function incomplete(name, detail) {
 
 const browser = await chromium.launch();
 
+/**
+ * Is the dialog actually presented to the user?
+ *
+ * "Closed" is not the same as "removed from the DOM". The command palette, tutor chat,
+ * and tour unmount when dismissed, but the mobile module drawer stays mounted and flips
+ * `inert` plus `aria-hidden` instead, which is a legitimate pattern and is what the
+ * `inert` fix in this release relies on. Counting elements reported that drawer as never
+ * closing and produced a failure against code that was correct.
+ */
+const dialogExposed = (page, selector) =>
+  page.evaluate((sel) => {
+    const dialog = document.querySelector(sel);
+    if (!dialog) return false;
+    for (let node = dialog; node; node = node.parentElement) {
+      if (node.hasAttribute?.('inert')) return false;
+      if (node.getAttribute?.('aria-hidden') === 'true') return false;
+    }
+    const style = getComputedStyle(dialog);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+  }, selector);
+
 /** Is focus currently inside the given dialog? */
 const focusInside = (page, selector) =>
   page.evaluate((sel) => {
@@ -64,8 +85,8 @@ async function auditDialog(page, { name, selector, open, expectEscape = true }) 
   const opener = await open();
   await page.waitForTimeout(600);
 
-  const present = await page.locator(selector).count();
-  check(present > 0, `[${name}] opens by keyboard`, present ? '' : 'dialog never appeared');
+  const present = await dialogExposed(page, selector);
+  check(present, `[${name}] opens by keyboard`, present ? '' : 'dialog never became exposed');
   if (!present) return;
 
   check(await focusInside(page, selector), `[${name}] moves focus into the dialog`,
@@ -91,11 +112,11 @@ async function auditDialog(page, { name, selector, open, expectEscape = true }) 
   if (expectEscape) {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(500);
-    const stillOpen = await page.locator(selector).count();
-    check(stillOpen === 0, `[${name}] Escape closes the dialog`,
-      stillOpen === 0 ? '' : 'dialog still open after Escape, so there is no keyboard dismissal');
+    const stillOpen = await dialogExposed(page, selector);
+    check(!stillOpen, `[${name}] Escape closes the dialog`,
+      !stillOpen ? '' : 'dialog still exposed after Escape, so there is no keyboard dismissal');
 
-    if (stillOpen === 0 && opener) {
+    if (!stillOpen && opener) {
       const now = await activeName(page);
       check(now === opener, `[${name}] focus returns to the control that opened it`,
         now === opener ? '' : `focus went to "${now}", expected "${opener}"`);
@@ -177,6 +198,60 @@ async function auditDialog(page, { name, selector, open, expectEscape = true }) 
     incomplete(
       '[interface tour] opens on a first visit',
       'tour did not appear, so its focus and dismissal behaviour were not measured',
+    );
+  }
+  await ctx.close();
+}
+
+// --- MobileModuleNav, the fourth dialog and the only one that cannot exist on desktop ---
+// It carries its own focus trap, Escape handler, and focus restore, and none of it was
+// ever exercised: every other context in this file is 1280 wide and the drawer is
+// lg:hidden. It is also the component this release changed (inert while closed), which
+// is exactly the kind of edit that can leave a panel permanently unusable.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() =>
+    localStorage.setItem('python-mastery-onboarding-seen', '1'));
+  await page.goto(BASE + LESSON, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(800);
+
+  const SELECTOR = '[role="dialog"][aria-label="module navigation"]';
+
+  // Closed, its contents must be unreachable. Before `inert` they were all tabbable from
+  // a drawer translated off screen.
+  const reachableWhileClosed = await page.evaluate((sel) => {
+    const dialog = document.querySelector(sel);
+    if (!dialog) return null;
+    const first = dialog.querySelector('a[href], button');
+    if (!first) return null;
+    first.focus();
+    return dialog.contains(document.activeElement);
+  }, SELECTOR);
+  if (reachableWhileClosed === null) {
+    incomplete('[module navigation] drawer present while closed', 'dialog not found at phone width');
+  } else {
+    check(reachableWhileClosed === false, '[module navigation] closed drawer is unreachable',
+      reachableWhileClosed === false ? '' : 'focus landed inside a drawer that is off screen');
+  }
+
+  const trigger = page.locator('button[aria-label="open module nav"]').first();
+  if (await trigger.count()) {
+    await auditDialog(page, {
+      name: 'module navigation',
+      selector: SELECTOR,
+      open: async () => {
+        await trigger.focus();
+        const label = await activeName(page);
+        await page.keyboard.press('Enter');
+        return label;
+      },
+    });
+  } else {
+    incomplete(
+      '[module navigation] opens by keyboard',
+      'no toggle matched at phone width, so the drawer trap and dismissal were not measured',
     );
   }
   await ctx.close();

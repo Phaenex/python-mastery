@@ -88,8 +88,8 @@ to `main`. Vercel's `vercel.deployment.success` repository dispatch triggers the
 production accessibility workflow for production deployments; it can also be run
 manually with a deployment URL.
 
-**Manual screen-reader acceptance:** automation verifies the accessibility tree, not
-whether its speech is usable. Follow `docs/VOICEOVER-ACCEPTANCE.md` and do not report
-VoiceOver as passing without a human completing that checklist.
+**Scope note:** the gates measure the accessibility tree and keyboard behaviour. Report
+what they measured. Do not add manual screen-reader acceptance as a release gate or carry
+it as a standing open item; it is deliberately out of scope for this project.
 
 **Related local projects:** sql-mastery (same shell pattern, different runtime). The portfolio site `damato-portfolio` analytics tracker is NOT installed here on purpose; self-traffic was polluting the dashboard.

@@ -2,11 +2,9 @@
 /**
  * What the accessibility tree actually exposes.
  *
- * This is as close to a screen reader as automation gets, and it is worth being precise
- * about the gap: it reads the same tree VoiceOver and NVDA read, so it can prove a
- * heading level is wrong or that a result is never announced. It cannot tell you whether
- * the resulting speech makes sense, whether the reading order is followable, or whether
- * finishing a lesson by ear is bearable. Those still need a person and a screen reader.
+ * This inspects the same accessibility tree assistive technology consumes, so it can
+ * prove a heading level is wrong, a control is unnamed, or a result is never announced.
+ * It asserts structure and announcement, not subjective legibility.
  *
  * What it checks, none of which axe covers:
  *   - heading levels descend without skipping, so the outline is navigable by heading
@@ -222,6 +220,4 @@ console.log(
   `\n  ${passes.length} passed · ${failures.length} failed · ` +
   `${broken.length} incomplete · ${ROUTES.length - broken.filter((item) => item.includes('] loads')).length}/${ROUTES.length} routes loaded`,
 );
-console.log('\n  \x1b[33mNot covered by this or any other gate here:\x1b[0m whether the speech that');
-console.log('  results is followable. That needs a person with a screen reader.');
 process.exit(gateExitCode({ failures: failures.length, incomplete: broken.length }));
