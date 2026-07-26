@@ -65,41 +65,57 @@ if (!ready) {
 await page.locator('a,button').filter({ hasText: /challenges/i }).first().click();
 await page.waitForTimeout(800);
 
-// --- the editor must be escapable, in both directions ---
+/**
+ * The editor must be escapable in both directions, and must say so.
+ *
+ * Run against every surface that mounts CodeEditor rather than one of them: the fix is
+ * shared, but "shared" is a claim about the source, not evidence about the page, and a
+ * wrapper can re-break it by handling keys above the textarea.
+ */
+async function checkEditorEscapes(where) {
+  const editor = page.locator('textarea').first();
+  if (!(await editor.count())) {
+    check(false, `[${where}] editor is present`, 'no textarea found on this surface');
+    return;
+  }
+  await editor.focus();
+
+  await page.keyboard.press('Tab');
+  const stillIn = await active();
+  check(stillIn.tag === 'TEXTAREA', `[${where}] Tab still indents inside the editor`,
+    stillIn.tag === 'TEXTAREA' ? '' : 'Tab left the editor, so indenting is broken');
+
+  await editor.focus();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Tab');
+  const out = await active();
+  check(out.tag !== 'TEXTAREA', `[${where}] Escape then Tab moves focus forward out`,
+    out.tag !== 'TEXTAREA' ? `landed on ${out.tag} "${out.name}"` : 'KEYBOARD TRAP: focus never left');
+
+  await editor.focus();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Shift+Tab');
+  const back = await active();
+  check(back.tag !== 'TEXTAREA', `[${where}] Escape then Shift+Tab moves focus backward out`,
+    back.tag !== 'TEXTAREA' ? `landed on ${back.tag} "${back.name}"` : 'KEYBOARD TRAP: focus never left backward');
+
+  // The way out is useless if it is a secret. WCAG 2.1.2 requires the user be told.
+  const described = await page.evaluate(() => {
+    const ta = document.querySelector('textarea');
+    const id = ta?.getAttribute('aria-describedby');
+    if (!id) return null;
+    return document.getElementById(id)?.textContent?.trim() || null;
+  });
+  check(
+    !!described && /escape/i.test(described),
+    `[${where}] editor advertises the escape hatch to assistive tech`,
+    described ? `describedby: "${described}"` : 'textarea has no aria-describedby explaining how to leave',
+  );
+}
+
+await checkEditorEscapes('lesson challenge');
+
 const editor = page.locator('textarea').first();
-await editor.focus();
-
-await page.keyboard.press('Tab');
-const stillIn = await active();
-check(stillIn.tag === 'TEXTAREA', 'Tab still indents inside the editor',
-  stillIn.tag === 'TEXTAREA' ? '' : 'Tab left the editor, so indenting is broken');
-
-await editor.focus();
-await page.keyboard.press('Escape');
-await page.keyboard.press('Tab');
-const out = await active();
-check(out.tag !== 'TEXTAREA', 'Escape then Tab moves focus forward out of the editor',
-  out.tag !== 'TEXTAREA' ? `landed on ${out.tag} "${out.name}"` : 'KEYBOARD TRAP: focus never left');
-
-await editor.focus();
-await page.keyboard.press('Escape');
-await page.keyboard.press('Shift+Tab');
-const back = await active();
-check(back.tag !== 'TEXTAREA', 'Escape then Shift+Tab moves focus backward out of the editor',
-  back.tag !== 'TEXTAREA' ? `landed on ${back.tag} "${back.name}"` : 'KEYBOARD TRAP: focus never left backward');
-
-// The way out is useless if it is a secret. WCAG 2.1.2 requires the user be told.
-const described = await page.evaluate(() => {
-  const ta = document.querySelector('textarea');
-  const id = ta?.getAttribute('aria-describedby');
-  if (!id) return null;
-  return document.getElementById(id)?.textContent?.trim() || null;
-});
-check(
-  !!described && /escape/i.test(described),
-  'Editor advertises the escape hatch to assistive tech',
-  described ? `describedby: "${described}"` : 'textarea has no aria-describedby explaining how to leave',
-);
 
 // --- run code with the keyboard only, and confirm the result is announced ---
 // Select-all is Meta+A on macOS; Control+A there is "move to start of line", which
@@ -192,6 +208,27 @@ check(unnamed.length === 0, 'Every focus stop has an accessible name',
   unnamed.length ? `${unnamed.length} unnamed (${unnamed.map((u) => u.tag).join(', ')})` : '');
 check(unringed.length === 0, 'Every focus stop shows a focus indicator',
   unringed.length ? `${unringed.length} without a visible ring (${unringed.map((u) => u.tag).join(', ')})` : '');
+
+// --- the other surface that mounts the same editor ---
+// ProjectView/ProjectChallengeBlock render CodeEditor through a different wrapper, so a
+// pass on the lesson page is evidence about the lesson page and nothing else.
+try {
+  await page.goto(BASE + '/projects/ai-doc-assistant', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+  // The project surface labels its button "run & check", not "run".
+  const projRun = page.locator('button').filter({ hasText: /^run\b/i }).first();
+  await projRun.waitFor({ state: 'visible', timeout: 120000 });
+  let projReady = false;
+  for (let i = 0; i < 90; i++) {
+    if (await projRun.isEnabled()) { projReady = true; break; }
+    await page.waitForTimeout(2000);
+  }
+  check(projReady, '[project] Pyodide becomes ready',
+    projReady ? '' : 'run button never enabled; the project editor checks did not run');
+  if (projReady) await checkEditorEscapes('project');
+} catch (e) {
+  check(false, '[project] page reachable for keyboard checks', e.message.split('\n')[0].slice(0, 70));
+}
 
 await browser.close();
 
