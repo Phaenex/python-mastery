@@ -28,9 +28,25 @@ This version has breaking changes; APIs, conventions, and file structure may all
 
 **Build checks before shipping:**
 ```bash
-npm run build
-npx tsc --noEmit
+npm run verify         # lessons, vitest, lint, tsc, build
 ```
+
+**Accessibility gates** (need a running server; pass a URL or they hit production):
+```bash
+npm run check:a11y     -- http://localhost:3010   # axe-core, every route × 2 schemes × 2 widths
+npm run check:ux       -- http://localhost:3010   # 45 hand-written UX checks
+npm run check:keyboard -- http://localhost:3010   # keyboard-only journey through a lesson
+```
+`check:keyboard` exists because axe cannot press a key. It caught a WCAG 2.1.2 trap that
+59 clean axe scans could not see: the editor swallowed every Tab and Shift+Tab, so a
+keyboard user who reached it had to reload the page to escape. Escape now arms
+"Tab moves focus" for one keypress. Editor key handling lives in `lib/editor-keys.ts` as
+a pure function precisely so it can be unit tested; do not move it back into the
+component.
+
+`check:a11y` fails on skipped routes and on duplicate `<title>`s, not only on axe
+violations — a route that times out used to print one yellow dot and still report
+"no violations".
 
 **Deployment:** Vercel auto-deploys main branch. Live at https://damato-python.vercel.app.
 

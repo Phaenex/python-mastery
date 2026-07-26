@@ -393,16 +393,23 @@ export function OutputPanel({ output, error, isRunning, executionTime, activeCha
           <div className="w-2 h-2 rounded-full bg-accent/50" />
           <span className="text-sm font-medium text-muted-foreground">Output</span>
         </div>
-        <div className="flex items-center gap-3">
+        {/* Persistent live region, not one created at the moment it has something to
+            say: an element inserted already carrying role="status" is announced
+            unreliably. "Running..." lived outside any live region, so a screen reader
+            user pressed Run and heard nothing at all until the output landed, which for
+            a cold Pyodide call is several seconds of silence with no way to tell whether
+            the keypress registered. */}
+        <div className="flex items-center gap-3" role="status" aria-live="polite">
           {executionTime !== undefined && executionTime > 0 && !isRunning && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <span className="text-success">⚡</span>
+              <span className="text-success" aria-hidden="true">⚡</span>
+              <span className="sr-only">Finished in </span>
               {formatExecutionTime(executionTime)}
             </span>
           )}
           {isRunning && (
             <span className="text-xs text-accent loading-pulse flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" aria-hidden="true" />
               Running...
             </span>
           )}

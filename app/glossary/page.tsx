@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Glossary · python-mastery",
+  description: "Plain-language definitions of the Python terms used across the course.",
+};
 
 const TERMS: { term: string; def: string }[] = [
   { term: "syntax", def: "The grammar rules of the language. Get a comma or a colon wrong and Python stops with a syntax error." },

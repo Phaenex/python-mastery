@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useEffect, useMemo } from "react";
+import { useCallback, useRef, useEffect, useMemo, useState, useId } from "react";
+import { applyEditorKey } from "@/lib/editor-keys";
 
 interface CodeEditorProps {
   code: string;
@@ -167,6 +168,17 @@ export function CodeEditor({
   const highlightRef = useRef<HTMLDivElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
+  // Tab indents, which is what you want while writing Python and a keyboard trap the
+  // rest of the time: a keyboard-only user who reached this textarea could not Tab out,
+  // Shift+Tab out, or escape it at all, and had to reload the page to reach the Run
+  // button. WCAG 2.1.2 is Level A and this failed it outright. Escape now arms "Tab
+  // moves focus" for one keypress, the same escape hatch Monaco and CodeMirror use.
+  // Arming lasts until Tab is pressed or focus leaves, so the editor still indents
+  // normally the moment you come back to it.
+  const [tabMovesFocus, setTabMovesFocus] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const escapeHintId = useId();
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if ((e.shiftKey || e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -175,90 +187,46 @@ export function CodeEditor({
         return;
       }
 
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const target = e.target as HTMLTextAreaElement;
-        const start = target.selectionStart;
-        const end = target.selectionEnd;
-        const value = target.value;
-
-        if (e.shiftKey) {
-          const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-          const lineContent = value.slice(lineStart, start);
-          const spacesToRemove = lineContent.match(/^ {1,4}/)?.[0].length || 0;
-          if (spacesToRemove > 0) {
-            const newValue = value.substring(0, lineStart) + value.substring(lineStart + spacesToRemove);
-            onChange(newValue);
-            setTimeout(() => {
-              target.selectionStart = target.selectionEnd = start - spacesToRemove;
-            }, 0);
-          }
-        } else {
-          const newValue = value.substring(0, start) + "    " + value.substring(end);
-          onChange(newValue);
-          setTimeout(() => {
-            target.selectionStart = target.selectionEnd = start + 4;
-          }, 0);
-        }
+      if (e.key === "Escape") {
+        // Don't preventDefault: Escape may also need to close a dialog above us.
+        setTabMovesFocus(true);
+        return;
       }
 
-      const pairs: Record<string, string> = {
-        "(": ")",
-        "[": "]",
-        "{": "}",
-        '"': '"',
-        "'": "'",
-      };
-
-      if (pairs[e.key]) {
-        const target = e.target as HTMLTextAreaElement;
-        const start = target.selectionStart;
-        const end = target.selectionEnd;
-        const value = target.value;
-
-        if (start === end) {
-          e.preventDefault();
-          const closingChar = pairs[e.key];
-          const newValue = value.substring(0, start) + e.key + closingChar + value.substring(end);
-          onChange(newValue);
-          setTimeout(() => {
-            target.selectionStart = target.selectionEnd = start + 1;
-          }, 0);
-        }
+      // Armed, then went back to typing: they changed their mind, so put Tab back to
+      // indenting rather than leaving a surprise exit primed several keystrokes later.
+      if (tabMovesFocus && e.key !== "Tab" && e.key !== "Shift") {
+        setTabMovesFocus(false);
       }
 
-      if ([")", "]", "}", '"', "'"].includes(e.key)) {
-        const target = e.target as HTMLTextAreaElement;
-        const start = target.selectionStart;
-        const value = target.value;
-        if (value[start] === e.key) {
-          e.preventDefault();
-          target.selectionStart = target.selectionEnd = start + 1;
-        }
+      if (e.key === "Tab" && tabMovesFocus) {
+        // Let the browser move focus, and re-arm indenting for next time.
+        setTabMovesFocus(false);
+        return;
       }
 
-      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-        const target = e.target as HTMLTextAreaElement;
-        const start = target.selectionStart;
-        const value = target.value;
+      const target = e.target as HTMLTextAreaElement;
+      const result = applyEditorKey(
+        { value: target.value, selectionStart: target.selectionStart, selectionEnd: target.selectionEnd },
+        e.key,
+        e.shiftKey,
+      );
+      if (!result) return;
 
-        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-        const lineContent = value.slice(lineStart, start);
-        const currentIndent = lineContent.match(/^[ ]*/)?.[0] || "";
-
-        const trimmedLine = lineContent.trimEnd();
-        const needsExtraIndent = trimmedLine.endsWith(":");
-
-        e.preventDefault();
-        const newIndent = needsExtraIndent ? currentIndent + "    " : currentIndent;
-        const newValue = value.substring(0, start) + "\n" + newIndent + value.substring(start);
-        onChange(newValue);
+      e.preventDefault();
+      if (result.value !== target.value) {
+        onChange(result.value);
+        // The caret has to be restored after React commits the new value, or the
+        // controlled re-render drops it to the end of the text.
         setTimeout(() => {
-          target.selectionStart = target.selectionEnd = start + 1 + newIndent.length;
+          target.selectionStart = target.selectionEnd = result.cursor;
         }, 0);
+      } else {
+        // Caret-only moves (stepping over a closer) need no re-render, so set it now.
+        target.selectionStart = target.selectionEnd = result.cursor;
       }
     },
-    [onRun, onChange]
+    [onRun, onChange, tabMovesFocus]
   );
 
   const syncScroll = useCallback(() => {
@@ -296,7 +264,11 @@ export function CodeEditor({
   }, [code]);
 
   return (
-    <div className="code-editor relative h-full rounded-lg overflow-hidden border border-border bg-[#1e1e1e]">
+    // The textarea sets outline-none and renders its text transparent (the highlight
+    // layer underneath draws the visible code), so tabbing into it produced nothing but a
+    // thin caret and no way to tell focus had landed. The ring goes on the container so
+    // it surrounds the line numbers too, rather than a rectangle floating inside.
+    <div className="code-editor relative h-full rounded-lg overflow-hidden border border-border bg-[#1e1e1e] focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/60">
       <div className="flex h-full">
         <div
           ref={lineNumbersRef}
@@ -327,12 +299,18 @@ export function CodeEditor({
             value={code}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              setTabMovesFocus(false);
+              setIsFocused(false);
+            }}
             disabled={disabled}
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
             aria-label={label ?? "Python code editor"}
-            aria-keyshortcuts="Control+Enter Meta+Enter Shift+Enter"
+            aria-describedby={escapeHintId}
+            aria-keyshortcuts="Control+Enter Meta+Enter Shift+Enter Escape"
             className="absolute inset-0 w-full h-full resize-none p-4 bg-transparent font-mono text-sm leading-6 outline-none disabled:opacity-50 caret-accent"
             style={{
               fontFamily: "var(--font-geist-mono), monospace",
@@ -341,6 +319,23 @@ export function CodeEditor({
               caretColor: "var(--accent)",
             }}
           />
+
+          {/* Always in the DOM so aria-describedby resolves and a screen reader reads the
+              way out on focus. Only painted while the editor is focused, because a
+              sighted keyboard user needs to discover it exactly then and nobody else
+              needs it sitting on screen. */}
+          <p
+            id={escapeHintId}
+            className={
+              isFocused
+                ? "absolute bottom-2 right-2 z-10 rounded border border-border bg-card/95 px-2 py-1 text-[11px] text-muted-foreground pointer-events-none"
+                : "sr-only"
+            }
+          >
+            {tabMovesFocus
+              ? "Tab now moves focus out of the editor."
+              : "Tab indents. Press Escape, then Tab, to move focus out."}
+          </p>
         </div>
       </div>
 

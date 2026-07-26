@@ -1,27 +1,21 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { NotFoundTerminal } from "@/components/NotFoundTerminal";
+
+// A server component so it can carry its own title; the path readout that needs the
+// client lives in NotFoundTerminal.
+export const metadata: Metadata = {
+  title: "Page not found · python-mastery",
+};
 
 export default function NotFound() {
-  const pathname = usePathname();
-  const target = pathname && pathname !== "/" ? pathname : "/the-page";
-
   return (
     <main id="main" tabIndex={-1} className="min-h-screen flex flex-col bg-background text-foreground font-mono text-sm">
       <section className="flex-1 max-w-3xl mx-auto w-full px-6 py-16">
         {/* The page states the error as shell output by design, so the heading is for
             assistive tech only. Without it the 404 had no h1 and announced nothing. */}
         <h1 className="sr-only">Page not found</h1>
-        <p>
-          <span className="text-accent">damato@python</span>
-          <span className="text-muted-foreground">:</span>
-          <span className="text-muted-foreground">~$</span>{" "}
-          <span>cd {target}</span>
-        </p>
-        <p className="mt-2 text-error">
-          bash: cd: {target}: No such file or directory
-        </p>
+        <NotFoundTerminal />
 
         <p className="mt-8">
           <span className="text-accent">damato@python</span>

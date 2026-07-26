@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Next steps · python-mastery",
+  description: "Where to go once you have worked through the modules.",
+};
 
 export default function NextStepsPage() {
   return (

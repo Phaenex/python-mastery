@@ -34,6 +34,9 @@ const ROUTES = [
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 
 const findings = new Map(); // ruleId -> { impact, help, nodes:Set, routes:Set }
+const skipped = []; // { label, why } for scans that never ran
+const scannedRoutes = new Set();
+const titles = new Map(); // route -> document.title
 let scans = 0;
 
 async function scan(page, label) {
@@ -60,13 +63,22 @@ for (const scheme of ['dark', 'light']) {
     });
     const page = await ctx.newPage();
     for (const route of ROUTES) {
+      const label = `${route} [${scheme}/${vp.tag}]`;
       try {
-        await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 60000 });
+        // Not networkidle: /projects/[slug] keeps a connection busy long enough that
+        // networkidle never fired, so that route timed out and was silently skipped in
+        // all four contexts while the run still printed "no violations". Load, then give
+        // the network a chance to settle, but never let settling be a hard requirement.
+        await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
         await page.waitForTimeout(600);
-        const n = await scan(page, `${route} [${scheme}/${vp.tag}]`);
+        const n = await scan(page, label);
+        scannedRoutes.add(route);
+        titles.set(route, await page.title());
         if (n) process.stdout.write('\x1b[31m.\x1b[0m');
         else process.stdout.write('\x1b[32m.\x1b[0m');
-      } catch {
+      } catch (e) {
+        skipped.push({ label, why: e.message.split('\n')[0].slice(0, 80) });
         process.stdout.write('\x1b[33m?\x1b[0m');
       }
     }
@@ -130,6 +142,35 @@ if (!sorted.length) {
 const blocking = sorted.filter(([, f]) => f.impact === 'critical' || f.impact === 'serious').length;
 console.log(`\n  ${sorted.length} distinct rule(s) violated · ${blocking} critical/serious`);
 
+// A scan that never ran is not a scan that passed. These used to show up as one yellow
+// character in a wall of green dots and never appear again, so a run that quietly missed
+// a whole route still read as a clean sweep.
+// WCAG 2.4.2: axe checks that a title exists, never that it says anything. Every lesson
+// shared "Lessons · python-mastery" and every project shared "Projects · python-mastery",
+// so a row of open tabs was unreadable and each navigation announced the same words.
+const byTitle = new Map();
+for (const [route, title] of titles) {
+  if (!byTitle.has(title)) byTitle.set(title, []);
+  byTitle.get(title).push(route);
+}
+const duplicateTitles = [...byTitle.entries()].filter(([, routes]) => routes.length > 1);
+if (duplicateTitles.length) {
+  console.log(`\n\x1b[31m  DUPLICATE TITLES: ${duplicateTitles.length} title(s) shared by more than one route:\x1b[0m`);
+  for (const [title, routes] of duplicateTitles) console.log(`    "${title}" — ${routes.join(', ')}`);
+}
+
+const neverScanned = ROUTES.filter((r) => !scannedRoutes.has(r));
+if (skipped.length) {
+  console.log(`\n\x1b[33m  ${skipped.length} scan(s) did not run:\x1b[0m`);
+  for (const s of skipped.slice(0, 10)) console.log(`    ${s.label} — ${s.why}`);
+  if (skipped.length > 10) console.log(`    …and ${skipped.length - 10} more`);
+}
+if (neverScanned.length) {
+  console.log(`\n\x1b[31m  NOT COVERED: ${neverScanned.length} route(s) were never scanned in any context:\x1b[0m`);
+  for (const r of neverScanned) console.log(`    ${r}`);
+  console.log('  "no violations" says nothing about these.');
+}
+
 // A run that scanned nothing reported "no violations" and exited 0 while the server was
 // down. An empty result is not a pass; it is a broken run, and it must be louder than a
 // real failure because it looks like success.
@@ -141,4 +182,4 @@ if (scans < EXPECTED_MIN_SCANS) {
   console.log('  "no violations" here means nothing was measured. Is the server up?');
   process.exit(2);
 }
-process.exit(blocking ? 1 : 0);
+process.exit(blocking || neverScanned.length || duplicateTitles.length ? 1 : 0);
