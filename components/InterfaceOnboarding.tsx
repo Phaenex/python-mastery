@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "python-mastery-onboarding-seen";
 
@@ -39,6 +39,8 @@ function markSeen() {
 export function InterfaceOnboarding() {
   const [step, setStep] = useState<number>(-1);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     try {
@@ -81,12 +83,65 @@ export function InterfaceOnboarding() {
     };
   }, [step]);
 
-  function done() {
+  const done = useCallback(() => {
     markSeen();
     setStep(-1);
-  }
+    // Send focus back where it was, or the user lands at the top of the document with
+    // no idea where they are.
+    openerRef.current?.focus?.();
+    openerRef.current = null;
+  }, []);
 
-  if (step < 0 || step >= STEPS.length || !rect) return null;
+  // This tour opens on its own, covers the page, and declares aria-modal="true", but it
+  // never moved focus into itself and had no keyboard dismissal. A screen reader user
+  // was told the rest of the page was inert while focus sat outside the dialog on
+  // content they had just been told to ignore, and a keyboard user had to Tab to the
+  // end of the page to reach "skip". Escape now closes it, focus enters on open, and
+  // Tab cycles inside while it is up.
+  const visible = step >= 0 && step < STEPS.length && !!rect;
+
+  useEffect(() => {
+    if (!visible) return;
+    if (!openerRef.current) openerRef.current = document.activeElement as HTMLElement | null;
+
+    const focusables = () =>
+      Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled"));
+
+    const id = requestAnimationFrame(() => focusables()[0]?.focus());
+
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        done();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const activeEl = document.activeElement;
+      if (e.shiftKey && (activeEl === first || !dialogRef.current?.contains(activeEl))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (activeEl === last || !dialogRef.current?.contains(activeEl))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    return () => {
+      cancelAnimationFrame(id);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [visible, step, done]);
+
+  if (!visible || !rect) return null;
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
@@ -127,6 +182,7 @@ export function InterfaceOnboarding() {
     <>
       <div style={highlightStyle} className="border-2 border-accent" />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="interface tour"

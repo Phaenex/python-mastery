@@ -31,6 +31,11 @@ function check(ok, name, detail = '') {
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();
+// The interface tour opens unprompted on a first visit and correctly traps focus while
+// it is up, which means a fresh context measures the tour's keyboard behaviour instead
+// of the editor's. Dialog behaviour is a11y-modals.mjs's job; this file is about the
+// lesson underneath, so start from the state a returning user is in.
+await page.addInitScript(() => localStorage.setItem('python-mastery-onboarding-seen', '1'));
 
 const active = () => page.evaluate(() => {
   const el = document.activeElement;
