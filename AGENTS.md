@@ -28,8 +28,12 @@ This version has breaking changes; APIs, conventions, and file structure may all
 
 **Build checks before shipping:**
 ```bash
-npm run verify         # lessons, vitest, lint, tsc, build, all browser a11y gates
+npm run verify         # lessons, vitest, lint, tsc, build — fast, no browser gates
+npm run verify:all     # verify, plus all 6 browser a11y gates against a fresh build
 ```
+`verify` is the quick loop for everyday changes. `verify:all` is what CI runs on every
+PR and push, and what to run yourself before anything a11y-adjacent ships — a component,
+a layout, an interactive surface. Don't let a green `verify` stand in for a11y coverage.
 
 **Accessibility gates:**
 ```bash
@@ -68,10 +72,11 @@ from the CSSOM rather than matching the animation's name, because the fix for th
 called `ring-pulse` and a name check flagged the fix as the bug.
 
 The catalog-wide gates load `/api/a11y/routes` from the target being audited. That
-inventory is derived from `getAllModules()` and `getAllProjects()`, so every one of the
-111 lessons and 6 guided projects receives a baseline audit without a second slug list
-that can drift. Representative routes retain the expensive light/dark, desktop/phone,
-Pyodide, keyboard, and dialog states.
+inventory is derived from `getAllModules()` and `getAllProjects()`, so every lesson and
+guided project in the live catalog receives a baseline audit without a second slug list
+that can drift — the gates cover whatever `lib/lessons.ts` and `lib/projects.ts` define,
+today or after the next module ships. Representative routes retain the expensive
+light/dark, desktop/phone, Pyodide, keyboard, and dialog states.
 
 Gate exit codes are part of the contract: `0` is measured and passing, `1` is measured
 and failing, and `2` means a required check could not run. A skip, warning, or
@@ -83,8 +88,8 @@ decorative `aria-hidden` sibling — see `.attention-ring` in `globals.css`.
 
 **Deployment:** Vercel auto-deploys main branch. Live at https://damato-python.vercel.app.
 
-**CI:** `.github/workflows/verify.yml` runs `npm run verify` for pull requests and pushes
-to `main`. Vercel's `vercel.deployment.success` repository dispatch triggers the
+**CI:** `.github/workflows/verify.yml` runs `npm run verify:all` for pull requests and
+pushes to `main`. Vercel's `vercel.deployment.success` repository dispatch triggers the
 production accessibility workflow for production deployments; it can also be run
 manually with a deployment URL.
 
