@@ -31,7 +31,7 @@ export default function NextStepsPage() {
         </p>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># what this browser sandbox cannot do</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># what this browser sandbox cannot do</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
             The Python here runs in your browser, which is amazing for practice with zero setup. But it cannot
             install most libraries, read and write files on your computer, run a web server, talk to a real
@@ -41,7 +41,7 @@ export default function NextStepsPage() {
         </section>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># 1 · install real python</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># 1 · install real python</h2>
           <ul className="mt-4 space-y-2 text-muted-foreground leading-relaxed">
             <li>Get Python from <a href="https://www.python.org/downloads/" className="text-accent hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">python.org/downloads</a> (or, on a Mac, <code className="text-foreground">brew install python</code>).</li>
             <li>Get an editor: <a href="https://code.visualstudio.com/" className="text-accent hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">VS Code</a> is free and the most common. Install its Python extension.</li>
@@ -50,7 +50,7 @@ export default function NextStepsPage() {
         </section>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># 2 · run your own file</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># 2 · run your own file</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
             Make a file called <code className="text-foreground">hello.py</code>, put <code className="text-foreground">print(&quot;hello&quot;)</code> in it, and run it from the terminal:
           </p>
@@ -59,7 +59,7 @@ export default function NextStepsPage() {
         </section>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># 3 · isolate projects and install libraries</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># 3 · isolate projects and install libraries</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
             The Tooling module covers this in depth. The short version: each project gets its own virtual
             environment so their libraries do not fight.
@@ -70,7 +70,7 @@ pip install pandas requests`}</pre>
         </section>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># 4 · learn git and github</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># 4 · learn git and github</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
             git tracks your code history; GitHub stores it online and is where your portfolio lives. Every job
             expects it. Start with <code className="text-foreground">git init</code>, <code className="text-foreground">git add</code>, <code className="text-foreground">git commit</code>, then push to a GitHub repo.
@@ -79,7 +79,7 @@ pip install pandas requests`}</pre>
         </section>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># 5 · build real things</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># 5 · build real things</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
             This is the actual leap. Pick something small and real, finish it, then pick a slightly bigger one.
             Good first builds: a script that renames or sorts your files, a tiny command-line tool, a script
@@ -89,7 +89,7 @@ pip install pandas requests`}</pre>
         </section>
 
         <section className="mt-10">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># free places to keep going</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># free places to keep going</h2>
           <ul className="mt-4 space-y-2 text-muted-foreground leading-relaxed">
             <li><a href="https://docs.python.org/3/tutorial/" className="text-accent hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">The official Python tutorial</a>, dry but accurate, the source of truth.</li>
             <li><a href="https://automatetheboringstuff.com/" className="text-accent hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">Automate the Boring Stuff</a>, free book, practical projects for total beginners.</li>

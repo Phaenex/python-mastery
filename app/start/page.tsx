@@ -72,7 +72,7 @@ export default function StartPage() {
         </p>
 
         <section className="mt-10 space-y-5">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># tracks</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># tracks</h2>
           {TRACKS.map((track) => (
             <TrackCard
               key={track.slug}

@@ -37,6 +37,7 @@ const findings = new Map(); // ruleId -> { impact, help, nodes:Set, routes:Set }
 const skipped = []; // { label, why } for scans that never ran
 const scannedRoutes = new Set();
 const titles = new Map(); // route -> document.title
+const animatedText = []; // text that fades its own opacity, found by rule not by luck
 let scans = 0;
 
 async function scan(page, label) {
@@ -120,6 +121,79 @@ console.log('');
   await ctx.close();
 }
 
+
+// Nothing that carries text may animate its opacity. axe can only catch that by
+// happening to sample mid-fade — it found the tool dock's label on 1 of 59 scans, and
+// the same bug in the output panel's "Running..." not at all. This finds it by reading
+// the rule rather than by getting lucky with timing.
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  for (const route of ['/', '/learn', '/learn/ai-python/embeddings', '/review']) {
+    try {
+      await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      const offenders = await page.evaluate(() => {
+        // Walk the CSSOM once and record which @keyframes touch opacity. Names can
+        // repeat across sheets, so any definition that fades counts.
+        const fading = new Set();
+        for (const sheet of document.styleSheets) {
+          let rules;
+          try {
+            rules = sheet.cssRules;
+          } catch {
+            continue; // cross-origin sheet, not ours
+          }
+          for (const rule of rules) {
+            if (rule.type !== CSSRule.KEYFRAMES_RULE) continue;
+            for (const frame of rule.cssRules) {
+              if (frame.style && frame.style.getPropertyValue('opacity')) {
+                fading.add(rule.name);
+              }
+            }
+          }
+        }
+        const fadesOpacity = (names) =>
+          names.split(',').map((n) => n.trim()).some((n) => fading.has(n));
+
+        return [...document.querySelectorAll('*')]
+          .filter((el) => {
+            const cs = getComputedStyle(el);
+            if (cs.animationName === 'none') return false;
+            // Ask the keyframes what the animation actually changes rather than guessing
+            // from its name: the fix for this very bug is called "ring-pulse" and animates
+            // box-shadow, and a name-matching check flagged it as the thing it fixed.
+            if (!fadesOpacity(cs.animationName)) return false;
+            if (el.getAttribute('aria-hidden') === 'true') return false;
+            // The animating element is usually a container and the text is a descendant
+            // — the tool dock animates the whole panel while "tools" sits two levels
+            // down — so checking only this element's own text nodes finds nothing.
+            // Opacity composites down the whole subtree, so the subtree is what matters.
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            let node;
+            while ((node = walker.nextNode())) {
+              if (!node.textContent.trim()) continue;
+              const holder = node.parentElement;
+              if (!holder || holder.closest('[aria-hidden="true"]')) continue;
+              const hs = getComputedStyle(holder);
+              if (hs.display === 'none' || hs.visibility === 'hidden') continue;
+              return true;
+            }
+            return false;
+          })
+          .map((el) => `${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} "${el.textContent.trim().slice(0, 25)}"`);
+      });
+      if (offenders.length) {
+        animatedText.push(`${route}: ${offenders.join(', ')}`);
+      }
+    } catch {
+      // covered by the route scans above
+    }
+  }
+  await ctx.close();
+}
+
 await browser.close();
 
 const order = { critical: 0, serious: 1, moderate: 2, minor: 3 };
@@ -159,6 +233,13 @@ if (duplicateTitles.length) {
   for (const [title, routes] of duplicateTitles) console.log(`    "${title}" — ${routes.join(', ')}`);
 }
 
+if (animatedText.length) {
+  console.log(`\n\x1b[31m  TEXT ANIMATING ITS OWN OPACITY: ${animatedText.length} place(s):\x1b[0m`);
+  for (const a of animatedText) console.log(`    ${a}`);
+  console.log('  Contrast is only measurable at rest; put the animation on a decorative');
+  console.log('  sibling and leave the text at full opacity.');
+}
+
 const neverScanned = ROUTES.filter((r) => !scannedRoutes.has(r));
 if (skipped.length) {
   console.log(`\n\x1b[33m  ${skipped.length} scan(s) did not run:\x1b[0m`);
@@ -182,4 +263,4 @@ if (scans < EXPECTED_MIN_SCANS) {
   console.log('  "no violations" here means nothing was measured. Is the server up?');
   process.exit(2);
 }
-process.exit(blocking || neverScanned.length || duplicateTitles.length ? 1 : 0);
+process.exit(blocking || neverScanned.length || duplicateTitles.length || animatedText.length ? 1 : 0);

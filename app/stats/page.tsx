@@ -193,7 +193,7 @@ export default function StatsPage() {
 
       <main id="main" tabIndex={-1} className="flex-1 max-w-5xl mx-auto w-full px-6 py-10 font-mono">
         <h1 className="sr-only">Your stats — XP, streak and progress</h1>
-        <section className="text-sm">
+        <section className="text-sm" aria-label="shell prompt">
           <p>
             <span className="text-accent">damato@python</span>
             <span className="text-muted-foreground">:</span>
@@ -209,7 +209,7 @@ export default function StatsPage() {
           <>
             {showcase && (
               <section className="mt-8">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground"># status</p>
+                <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># status</h2>
                 <p className="mt-3 text-sm">
                   <span className="text-emerald-400">course complete</span>
                   <span className="text-muted-foreground">
@@ -221,7 +221,7 @@ export default function StatsPage() {
             )}
             {!showcase && (
             <section className="mt-8">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground"># profile</p>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># profile</h2>
               <div className="mt-3 grid sm:grid-cols-2 gap-x-10 gap-y-2 text-sm">
                 <p>
                   <span className="text-muted-foreground">rank</span>
@@ -270,7 +270,7 @@ export default function StatsPage() {
             )}
 
             <section className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground"># totals</p>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># totals</h2>
               <div className="mt-2 text-sm space-y-1">
                 <p>
                   lessons{"    "}
@@ -292,7 +292,7 @@ export default function StatsPage() {
             </section>
 
             <section className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground"># lessons by module</p>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># lessons by module</h2>
               <ul className="mt-3 text-xs space-y-1">
                 {moduleRows.map((m) => (
                   <li key={m.slug} className="grid grid-cols-[1fr_auto_auto] gap-4 items-baseline">
@@ -309,9 +309,9 @@ export default function StatsPage() {
             </section>
 
             <section className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground">
                 # checkpoints <span className="text-muted">[{checkpointsDone}/{checkpointRows.length} done{checkpointsDue > 0 ? ` · ${checkpointsDue} due to review` : ""}]</span>
-              </p>
+              </h2>
               <ul className="mt-3 text-xs grid sm:grid-cols-2 gap-x-6 gap-y-1">
                 {checkpointRows.map((c) => (
                   <li key={c.slug} className="flex items-baseline justify-between gap-3">
@@ -329,7 +329,7 @@ export default function StatsPage() {
             </section>
 
             <section className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground"># projects</p>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># projects</h2>
               <ul className="mt-3 text-xs space-y-1">
                 {projectRows.map((p) => (
                   <li key={p.slug} className="grid grid-cols-[1fr_auto_auto] gap-4 items-baseline">
@@ -352,14 +352,14 @@ export default function StatsPage() {
 
             {!showcase && (
             <section className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground">
                 # review queue
                 {dueCount > 0 && (
                   <span className="ml-2 text-amber-400 normal-case tracking-normal">
                     {dueCount} due
                   </span>
                 )}
-              </p>
+              </h2>
               <p className="mt-1 text-[11px] text-muted-foreground">
                 spaced repetition. re-solving a challenge in a due lesson from
                 memory (not just opening it) records the review and pushes the
@@ -397,7 +397,7 @@ export default function StatsPage() {
 
             {weakModules.length > 0 && (
               <section className="mt-10">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground"># weak modules</p>
+                <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># weak modules</h2>
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   under 50% complete. worth a pass.
                 </p>
@@ -414,7 +414,7 @@ export default function StatsPage() {
 
             {!showcase && (
             <section className="mt-10">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground"># rank ladder</p>
+              <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># rank ladder</h2>
               <ul className="mt-3 text-xs space-y-2">
                 {ladder.map((r) => {
                   const reached = xp >= r.threshold;

@@ -20,6 +20,8 @@ const GATES = [
   ['hand-written UX', 'scripts/a11y-verify.mjs'],
   ['keyboard journey', 'scripts/a11y-keyboard.mjs'],
   ['dialog behaviour', 'scripts/a11y-modals.mjs'],
+  ['component contracts', 'scripts/a11y-components.mjs'],
+  ['tree semantics', 'scripts/a11y-semantics.mjs'],
 ];
 
 const PORT = process.env.A11Y_PORT || 3011;

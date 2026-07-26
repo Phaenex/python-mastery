@@ -407,9 +407,12 @@ export function OutputPanel({ output, error, isRunning, executionTime, activeCha
               {formatExecutionTime(executionTime)}
             </span>
           )}
+          {/* The pulse belongs on the dot, not on the wrapper: loading-pulse animates
+              opacity down to 0.4, and on the wrapper that took the word "Running..."
+              with it, fading the only text telling you the run had started. */}
           {isRunning && (
-            <span className="text-xs text-accent loading-pulse flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" aria-hidden="true" />
+            <span className="text-xs text-accent flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse motion-reduce:animate-none" aria-hidden="true" />
               Running...
             </span>
           )}

@@ -92,7 +92,7 @@ export default function YourTurn({ moduleSlug, lessonSlug }: YourTurnProps) {
 
   return (
     <section id="your-turn" className="scroll-mt-32">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3"># your turn</p>
+      <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3"># your turn</h2>
       <p className="mb-3 text-xs text-muted-foreground">
         You read the examples. Now finish the code yourself before the full challenges. Stuck? reveal the answer.
       </p>

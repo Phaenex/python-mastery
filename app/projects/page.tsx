@@ -51,7 +51,7 @@ export default function ProjectsPage() {
 
       <main id="main" tabIndex={-1} className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
         <h1 className="sr-only">Projects</h1>
-        <section className="font-mono text-sm">
+        <section className="font-mono text-sm" aria-label="shell prompt">
           <p>
             <span className="text-accent">damato@python</span>
             <span className="text-muted-foreground">:</span>
@@ -65,7 +65,7 @@ export default function ProjectsPage() {
         </section>
 
         <section className="mt-8">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono"># projects</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-mono"># projects</h2>
           <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (
               <ProjectCard
@@ -78,7 +78,7 @@ export default function ProjectsPage() {
         </section>
 
         <section className="mt-10 font-mono text-xs text-muted-foreground space-y-1">
-          <p># notes</p>
+          <h2># notes</h2>
           <p>each project runs from real datasets embedded in the page (no downloads).</p>
           <p>steps validate on run. solutions unlock after a couple of failed attempts.</p>
           <p>longer-form than lessons, useful when i want to apply what a module covers.</p>

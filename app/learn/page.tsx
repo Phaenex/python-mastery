@@ -47,7 +47,7 @@ export default function LearnDashboard() {
 
       <main id="main" tabIndex={-1} className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
         <h1 className="sr-only">Lessons — all modules</h1>
-        <section className="font-mono text-sm">
+        <section className="font-mono text-sm" aria-label="shell prompt">
           <p>
             <span className="text-accent">damato@python</span>
             <span className="text-muted-foreground">:</span>
@@ -72,7 +72,7 @@ export default function LearnDashboard() {
 
         <section className="mt-8">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground font-mono"># modules</p>
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-mono"># modules</h2>
             <Link
               href="/start"
               className="font-mono text-xs text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"

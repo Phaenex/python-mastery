@@ -14,6 +14,8 @@
     "check:ux": "node scripts/a11y-verify.mjs",
     "check:keyboard": "node scripts/a11y-keyboard.mjs",
     "check:modals": "node scripts/a11y-modals.mjs",
+    "check:components": "node scripts/a11y-components.mjs",
+    "check:semantics": "node scripts/a11y-semantics.mjs",
     "check:all": "node scripts/a11y-all.mjs"
   },
   "dependencies": {

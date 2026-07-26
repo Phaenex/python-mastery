@@ -298,17 +298,17 @@ export default function LessonPage({ params }: LessonPageProps) {
 
             <div className="space-y-10 mt-6">
               <section id="theory" className="scroll-mt-32">
-                <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
+                <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
                   # theory
-                </p>
+                </h2>
                 <TheoryContent content={lesson.theory} />
               </section>
 
               {lesson.examples.length > 0 && (
                 <section id="examples" className="scroll-mt-32">
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
+                  <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
                     # examples <span className="text-muted">[{lesson.examples.length}]</span>
-                  </p>
+                  </h2>
                   <div className="space-y-6">
                     {lesson.examples.map((example, idx) => (
                       <ExampleBlock
@@ -327,9 +327,9 @@ export default function LessonPage({ params }: LessonPageProps) {
 
               {hasChallenges && (
                 <section id="challenges" className="scroll-mt-32">
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
+                  <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
                     # challenges <span className="text-muted">[{totalChallenges}]</span>
-                  </p>
+                  </h2>
                   <div className="space-y-6">
                     {lesson.challenges.map((challenge, idx) => (
                       <ChallengeBlock
@@ -352,9 +352,9 @@ export default function LessonPage({ params }: LessonPageProps) {
 
               {lesson.projectChallenge && (
                 <section id="project" className="scroll-mt-32">
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
+                  <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-3">
                     # project
-                  </p>
+                  </h2>
                   <ProjectChallengeBlock
                     projectChallenge={lesson.projectChallenge}
                     moduleSlug={moduleSlug}

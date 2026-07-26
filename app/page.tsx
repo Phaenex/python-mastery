@@ -33,7 +33,7 @@ export default function Home() {
             tech only. Without it this page had no h1 at all and screen-reader users got
             no page heading. */}
         <h1 className="sr-only">python-mastery — learn Python by writing it</h1>
-        <section className="flex flex-wrap items-baseline justify-between gap-3">
+        <section className="flex flex-wrap items-baseline justify-between gap-3" aria-label="shell prompt">
           <div className="flex-1 min-w-0">
             <HomeTerminal modules={modules} />
           </div>
@@ -44,7 +44,7 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="mt-6 space-y-4">
+        <section className="mt-6 space-y-4" aria-label="mode and progress notice">
           <ModeToggle />
           <div className="flex flex-wrap items-center gap-3">
             <Link
@@ -59,7 +59,7 @@ export default function Home() {
         </section>
 
         <section className="mt-8">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground"># modules</p>
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># modules</h2>
           <ul className="mt-3 border-y border-border/60 divide-y divide-border/40">
             {modules.map((m, idx) => {
               const doneCount = (() => {
@@ -110,7 +110,7 @@ export default function Home() {
 
         <section className="mt-10 grid sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground"># projects</p>
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># projects</h2>
             <Link
               href="/projects"
               className="mt-3 block py-2 px-2 -mx-2 rounded hover:bg-card/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -120,7 +120,7 @@ export default function Home() {
             </Link>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground"># stats</p>
+            <h2 className="text-xs uppercase tracking-widest text-muted-foreground"># stats</h2>
             <Link
               href="/stats"
               className="mt-3 block py-2 px-2 -mx-2 rounded hover:bg-card/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"

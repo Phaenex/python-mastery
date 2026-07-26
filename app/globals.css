@@ -237,6 +237,32 @@ pre, code {
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+/* Attention cue that animates the ring instead of the element's opacity.
+   Tailwind's animate-pulse fades the whole element to 50% opacity, so applying it to a
+   container fades its text too: the tool dock's "tools" label composited toward the
+   background mid-animation and measured below 4.5:1 there. axe caught it on 1 of 59
+   scans, which is exactly how often you would expect to sample a moving value. Nothing
+   that carries text should animate its opacity. */
+@keyframes ring-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in oklab, var(--accent) 15%, transparent);
+  }
+}
+
+.attention-ring {
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attention-ring {
+    animation: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 60%, transparent);
+  }
+}
+
 /* Sidebar active state */
 .sidebar-item-active {
   background: var(--accent-bg);

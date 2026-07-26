@@ -134,7 +134,7 @@ export default function ReviewPage() {
         </header>
         <main id="main" tabIndex={-1} className="flex-1 max-w-3xl mx-auto w-full px-6 py-10">
           <h1 className="sr-only">Review — spaced repetition</h1>
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-1"># mixed review</p>
+          <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-1"># mixed review</h2>
           <p className="font-mono text-[11px] text-muted-foreground mb-6">
             spaced repetition across modules. solve from memory. each one re-solved
             pushes that lesson&apos;s next review further out.

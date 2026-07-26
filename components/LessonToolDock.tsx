@@ -55,7 +55,7 @@ export default function LessonToolDock({
           data-tour-target="tutor"
           className={`fixed bottom-4 right-4 z-40 font-mono text-xs border bg-background/95 backdrop-blur rounded shadow-2xl overflow-hidden ${
             pulse
-              ? "border-accent ring-2 ring-accent/60 animate-pulse motion-reduce:animate-none"
+              ? "border-accent attention-ring"
               : "border-border"
           }`}
           role="region"
@@ -84,11 +84,16 @@ export default function LessonToolDock({
             </span>
           </button>
 
-          {expanded && (
-            <ul
-              id="lesson-tool-dock-list"
-              className="border-t border-border divide-y divide-border/60"
-            >
+          {/* Rendered whether or not it is open, and hidden rather than removed: the
+              button's aria-controls names this id, and while it was conditionally
+              mounted that reference pointed at nothing for the whole time the dock was
+              collapsed, which is almost always. `hidden` keeps it out of the tab order
+              and out of the accessibility tree without breaking the relationship. */}
+          <ul
+            id="lesson-tool-dock-list"
+            hidden={!expanded}
+            className="border-t border-border divide-y divide-border/60"
+          >
               {tools.map((t) => (
                 <li key={t}>
                   <button
@@ -103,8 +108,7 @@ export default function LessonToolDock({
                   </button>
                 </li>
               ))}
-            </ul>
-          )}
+          </ul>
         </div>
       )}
     </>
