@@ -156,7 +156,7 @@ export default function ProjectChallengeBlock({
           <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
             # task
           </p>
-          <h4 className="font-medium text-foreground">{projectChallenge.taskTitle}</h4>
+          <h3 className="font-medium text-foreground">{projectChallenge.taskTitle}</h3>
         </div>
 
         <div className="font-mono text-xs">

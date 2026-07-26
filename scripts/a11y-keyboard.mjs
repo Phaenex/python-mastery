@@ -17,15 +17,21 @@
  * switch that sets up the challenge view, and it is marked.
  */
 import { chromium } from 'playwright';
+import { gateExitCode } from './a11y-result.mjs';
 
 const BASE = process.argv[2] || 'https://damato-python.vercel.app';
 const LESSON = '/learn/ai-python/embeddings';
 
 const failures = [];
 const passes = [];
+const broken = [];
 function check(ok, name, detail = '') {
   (ok ? passes : failures).push(detail ? `${name} — ${detail}` : name);
   process.stdout.write(ok ? '\x1b[32m.\x1b[0m' : '\x1b[31mF\x1b[0m');
+}
+function incomplete(name, detail) {
+  broken.push(`${name} — ${detail}`);
+  process.stdout.write('\x1b[33m?\x1b[0m');
 }
 
 const browser = await chromium.launch();
@@ -228,11 +234,20 @@ try {
     if (await projRun.isEnabled()) { projReady = true; break; }
     await page.waitForTimeout(2000);
   }
-  check(projReady, '[project] Pyodide becomes ready',
-    projReady ? '' : 'run button never enabled; the project editor checks did not run');
-  if (projReady) await checkEditorEscapes('project');
+  if (projReady) {
+    check(true, '[project] Pyodide becomes ready');
+    await checkEditorEscapes('project');
+  } else {
+    incomplete(
+      '[project] Pyodide becomes ready',
+      'run button never enabled; the project editor checks did not run',
+    );
+  }
 } catch (e) {
-  check(false, '[project] page reachable for keyboard checks', e.message.split('\n')[0].slice(0, 70));
+  incomplete(
+    '[project] page reachable for keyboard checks',
+    e.message.split('\n')[0].slice(0, 70),
+  );
 }
 
 await browser.close();
@@ -240,5 +255,6 @@ await browser.close();
 console.log(`\n\n\x1b[1mkeyboard-only journey · ${passes.length + failures.length} checks\x1b[0m`);
 for (const p of passes) console.log(`  \x1b[32m✓\x1b[0m ${p}`);
 for (const f of failures) console.log(`  \x1b[31m✗\x1b[0m ${f}`);
-console.log(`\n  ${passes.length} passed · ${failures.length} failed`);
-process.exit(failures.length ? 1 : 0);
+for (const item of broken) console.log(`  \x1b[33m?\x1b[0m ${item}`);
+console.log(`\n  ${passes.length} passed · ${failures.length} failed · ${broken.length} incomplete`);
+process.exit(gateExitCode({ failures: failures.length, incomplete: broken.length }));

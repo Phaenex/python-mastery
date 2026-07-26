@@ -19,18 +19,31 @@
  *   node scripts/a11y-semantics.mjs http://localhost:3010
  */
 import { chromium } from 'playwright';
+import { loadRouteInventory, prepareStaticAuditPage } from './a11y-routes.mjs';
+import { gateExitCode } from './a11y-result.mjs';
 
 const BASE = process.argv[2] || 'https://damato-python.vercel.app';
 const LESSON = '/learn/ai-python/embeddings';
 
-const ROUTES = ['/', '/learn', '/projects', '/stats', '/glossary', '/next-steps',
-  '/review', '/start', LESSON];
+let inventory;
+try {
+  inventory = await loadRouteInventory(BASE);
+} catch (error) {
+  console.error(`\n\x1b[31mBROKEN RUN: ${error.message}\x1b[0m`);
+  process.exit(2);
+}
+const ROUTES = inventory.allPageRoutes;
 
 const failures = [];
 const passes = [];
+const broken = [];
 function check(ok, name, detail = '') {
   (ok ? passes : failures).push(detail ? `${name} — ${detail}` : name);
   process.stdout.write(ok ? '\x1b[32m.\x1b[0m' : '\x1b[31mF\x1b[0m');
+}
+function incomplete(name, detail) {
+  broken.push(`${name} — ${detail}`);
+  process.stdout.write('\x1b[33m?\x1b[0m');
 }
 
 // Names that describe the widget rather than its purpose. A screen reader user pulling
@@ -38,9 +51,9 @@ function check(ok, name, detail = '') {
 const USELESS_NAMES = /^(click here|here|read more|more|link|button|\.\.\.|…|→|←|▸|▾|\$|>_)$/i;
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-const page = await ctx.newPage();
-await page.addInitScript(() => localStorage.setItem('python-mastery-onboarding-seen', '1'));
+let ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+let page = await ctx.newPage();
+await prepareStaticAuditPage(page);
 
 for (const route of ROUTES) {
   try {
@@ -48,7 +61,7 @@ for (const route of ROUTES) {
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(400);
   } catch (e) {
-    check(false, `[${route}] loads`, e.message.split('\n')[0].slice(0, 50));
+    incomplete(`[${route}] loads`, e.message.split('\n')[0].slice(0, 80));
     continue;
   }
 
@@ -129,20 +142,27 @@ for (const route of ROUTES) {
   check(landmarks.main === 1, `[${route}] exactly one main landmark`, `found ${landmarks.main}`);
 }
 
+await ctx.close();
+ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+page = await ctx.newPage();
+await page.addInitScript(() =>
+  localStorage.setItem('python-mastery-onboarding-seen', '1'));
+
 // --- the part a screen reader user cannot see at all: does running code say anything ---
 {
-  await page.goto(BASE + LESSON, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-  const run = page.locator('button').filter({ hasText: /^run$/i }).first();
-  await run.waitFor({ state: 'visible', timeout: 120000 });
-  let ready = false;
-  for (let i = 0; i < 90; i++) {
-    if (await run.isEnabled()) { ready = true; break; }
-    await page.waitForTimeout(2000);
-  }
-  check(ready, '[lesson] Pyodide ready', ready ? '' : 'nothing below was measured');
+  try {
+    await page.goto(BASE + LESSON, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    const run = page.locator('button').filter({ hasText: /^run$/i }).first();
+    await run.waitFor({ state: 'visible', timeout: 120000 });
+    let ready = false;
+    for (let i = 0; i < 90; i++) {
+      if (await run.isEnabled()) { ready = true; break; }
+      await page.waitForTimeout(2000);
+    }
+    if (!ready) throw new Error('Pyodide never became ready; announcements were not measured');
+    check(true, '[lesson] Pyodide ready');
 
-  if (ready) {
     // Snapshot every live region before and after a run: the announcement a screen
     // reader makes is exactly the text that changes inside one of these.
     const liveText = () => page.evaluate(() =>
@@ -182,15 +202,26 @@ for (const route of ROUTES) {
     }
     check(/NameError/i.test(errText), '[lesson] errors are announced, not just coloured',
       /NameError/i.test(errText) ? '' : 'the traceback is rendered outside any live region');
+  } catch (error) {
+    incomplete('[lesson] runtime announcements', error.message.split('\n')[0].slice(0, 100));
   }
 }
 
+await ctx.close();
 await browser.close();
 
-console.log(`\n\n\x1b[1maccessibility tree semantics · ${passes.length + failures.length} checks\x1b[0m`);
+console.log(
+  `\n\n\x1b[1maccessibility tree semantics · ${passes.length + failures.length} checks · ` +
+  `${inventory.counts.modules} modules · ${inventory.counts.lessons} lessons · ` +
+  `${inventory.counts.projects} projects\x1b[0m`,
+);
 for (const p of passes) console.log(`  \x1b[32m✓\x1b[0m ${p}`);
 for (const f of failures) console.log(`  \x1b[31m✗\x1b[0m ${f}`);
-console.log(`\n  ${passes.length} passed · ${failures.length} failed`);
+for (const item of broken) console.log(`  \x1b[33m?\x1b[0m ${item}`);
+console.log(
+  `\n  ${passes.length} passed · ${failures.length} failed · ` +
+  `${broken.length} incomplete · ${ROUTES.length - broken.filter((item) => item.includes('] loads')).length}/${ROUTES.length} routes loaded`,
+);
 console.log('\n  \x1b[33mNot covered by this or any other gate here:\x1b[0m whether the speech that');
 console.log('  results is followable. That needs a person with a screen reader.');
-process.exit(failures.length ? 1 : 0);
+process.exit(gateExitCode({ failures: failures.length, incomplete: broken.length }));

@@ -1,0 +1,42 @@
+name: Production accessibility
+
+on:
+  repository_dispatch:
+    types: [vercel.deployment.success]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Deployment URL to audit
+        required: true
+        default: https://damato-python.vercel.app
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-accessibility
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.client_payload.environment == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TARGET_URL: >-
+        ${{ github.event_name == 'workflow_dispatch' &&
+            inputs.url ||
+            github.event.client_payload.url }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Audit deployed site
+        run: npm run check:all -- "$TARGET_URL"

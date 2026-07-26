@@ -60,6 +60,7 @@ export function MobileModuleNav({ open, onClose, module, completedLessons }: Mob
     <div
       className={`fixed inset-0 z-50 lg:hidden motion-reduce:transition-none ${open ? "" : "pointer-events-none"}`}
       aria-hidden={!open}
+      inert={!open}
     >
       <button
         type="button"

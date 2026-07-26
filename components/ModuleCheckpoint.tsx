@@ -182,7 +182,7 @@ export default function ModuleCheckpoint({ moduleSlug }: ModuleCheckpointProps) 
     <section id="checkpoint" className="scroll-mt-32 pt-2">
       <div className="rounded-lg border border-accent/30 bg-accent/[0.04] p-5">
         <div className="flex items-center justify-between">
-          <p className="font-mono text-xs uppercase tracking-widest text-accent"># module checkpoint</p>
+          <h2 className="font-mono text-xs uppercase tracking-widest text-accent"># module checkpoint</h2>
           <span className="font-mono text-xs text-muted-foreground">
             {resolved.size}/{items.length} correct
           </span>

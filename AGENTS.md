@@ -28,12 +28,12 @@ This version has breaking changes; APIs, conventions, and file structure may all
 
 **Build checks before shipping:**
 ```bash
-npm run verify         # lessons, vitest, lint, tsc, build
+npm run verify         # lessons, vitest, lint, tsc, build, all browser a11y gates
 ```
 
 **Accessibility gates:**
 ```bash
-npm run check:all      # builds nothing: boots the built app, runs all 5 gates, tears down
+npm run check:all      # builds nothing: boots the built app, runs all 6 gates, tears down
 npm run check:all -- https://damato-python.vercel.app   # or point at a live target
 ```
 Individually (each needs a running server; pass a URL or they hit production):
@@ -67,10 +67,29 @@ its own opacity — all three used to pass silently. The opacity rule reads the 
 from the CSSOM rather than matching the animation's name, because the fix for that bug is
 called `ring-pulse` and a name check flagged the fix as the bug.
 
+The catalog-wide gates load `/api/a11y/routes` from the target being audited. That
+inventory is derived from `getAllModules()` and `getAllProjects()`, so every one of the
+111 lessons and 6 guided projects receives a baseline audit without a second slug list
+that can drift. Representative routes retain the expensive light/dark, desktop/phone,
+Pyodide, keyboard, and dialog states.
+
+Gate exit codes are part of the contract: `0` is measured and passing, `1` is measured
+and failing, and `2` means a required check could not run. A skip, warning, or
+inconclusive browser state must never become a green release.
+
 **Anything that carries text must not animate its opacity.** Tailwind's `animate-pulse`
 fades to 50%, which drops text below contrast while it moves. Put the animation on a
 decorative `aria-hidden` sibling — see `.attention-ring` in `globals.css`.
 
 **Deployment:** Vercel auto-deploys main branch. Live at https://damato-python.vercel.app.
+
+**CI:** `.github/workflows/verify.yml` runs `npm run verify` for pull requests and pushes
+to `main`. Vercel's `vercel.deployment.success` repository dispatch triggers the
+production accessibility workflow for production deployments; it can also be run
+manually with a deployment URL.
+
+**Manual screen-reader acceptance:** automation verifies the accessibility tree, not
+whether its speech is usable. Follow `docs/VOICEOVER-ACCEPTANCE.md` and do not report
+VoiceOver as passing without a human completing that checklist.
 
 **Related local projects:** sql-mastery (same shell pattern, different runtime). The portfolio site `damato-portfolio` analytics tracker is NOT installed here on purpose; self-traffic was polluting the dashboard.

@@ -4,7 +4,7 @@
  *
  * The gates each need a running site, which is why none of them are in `npm run verify`
  * and why in practice they only got run when someone remembered to run them. This starts
- * the built app on its own port, runs all four, shuts the server down, and returns a
+ * the built app on its own port, runs all six, shuts the server down, and returns a
  * single exit code.
  *
  *   npm run check:all              build output must already exist (npm run build)
@@ -14,6 +14,7 @@
  */
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { loadRouteInventory } from './a11y-routes.mjs';
 
 const GATES = [
   ['axe-core', 'scripts/a11y-axe.mjs'],
@@ -47,6 +48,7 @@ async function waitForServer(url, ms = 120000) {
 function run(script, base) {
   return new Promise((resolve) => {
     const child = spawn('node', [script, base], { stdio: 'inherit' });
+    child.on('error', () => resolve(2));
     child.on('close', (code) => resolve(code ?? 1));
   });
 }
@@ -82,7 +84,20 @@ if (!external) {
   }
 }
 
+let inventory;
+try {
+  inventory = await loadRouteInventory(BASE);
+} catch (error) {
+  console.log(`\n\x1b[31m  BROKEN RUN: ${error.message}\x1b[0m`);
+  shutdown();
+  process.exit(2);
+}
+
 console.log(`\x1b[1mrunning ${GATES.length} gates against ${BASE}\x1b[0m\n`);
+console.log(
+  `catalog: ${inventory.counts.modules} modules · ${inventory.counts.lessons} lessons · ` +
+  `${inventory.counts.projects} projects\n`,
+);
 
 const results = [];
 for (const [name, script] of GATES) {

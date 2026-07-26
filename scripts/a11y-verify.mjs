@@ -17,6 +17,7 @@
  * code is expected to fail. Both are exercised for real below rather than described.
  */
 import { chromium } from 'playwright';
+import { gateExitCode } from './a11y-result.mjs';
 
 const BASE = process.argv[2] || 'https://damato-python.vercel.app';
 const LESSON = '/learn/ai-python/embeddings';
@@ -372,4 +373,9 @@ if (fail) {
   console.log('\nFailures:');
   for (const r of results.filter((x) => x.pass === false)) console.log(`  ${r.item} ${r.route}: ${r.detail}`);
 }
-process.exit(fail ? 1 : 0);
+if (warn) {
+  console.log('\nIncomplete checks:');
+  for (const r of results.filter((x) => x.pass === null)) console.log(`  ${r.item} ${r.route}: ${r.detail}`);
+  console.log('  A check that could not run is a broken run, not a pass.');
+}
+process.exit(gateExitCode({ failures: fail, incomplete: warn }));

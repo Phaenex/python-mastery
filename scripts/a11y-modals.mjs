@@ -17,15 +17,21 @@
  *   node scripts/a11y-modals.mjs http://localhost:3010
  */
 import { chromium } from 'playwright';
+import { gateExitCode } from './a11y-result.mjs';
 
 const BASE = process.argv[2] || 'https://damato-python.vercel.app';
 const LESSON = '/learn/ai-python/embeddings';
 
 const failures = [];
 const passes = [];
+const broken = [];
 function check(ok, name, detail = '') {
   (ok ? passes : failures).push(detail ? `${name} — ${detail}` : name);
   process.stdout.write(ok ? '\x1b[32m.\x1b[0m' : '\x1b[31mF\x1b[0m');
+}
+function incomplete(name, detail) {
+  broken.push(`${name} — ${detail}`);
+  process.stdout.write('\x1b[33m?\x1b[0m');
 }
 
 const browser = await chromium.launch();
@@ -168,7 +174,10 @@ async function auditDialog(page, { name, selector, open, expectEscape = true }) 
     check(await tour.count() === 0, '[interface tour] Escape dismisses it',
       await tour.count() === 0 ? '' : 'no keyboard dismissal: Escape does nothing');
   } else {
-    check(true, '[interface tour] not shown in this context', 'skipped, tour did not appear');
+    incomplete(
+      '[interface tour] opens on a first visit',
+      'tour did not appear, so its focus and dismissal behaviour were not measured',
+    );
   }
   await ctx.close();
 }
@@ -178,5 +187,6 @@ await browser.close();
 console.log(`\n\n\x1b[1mdialog keyboard behaviour · ${passes.length + failures.length} checks\x1b[0m`);
 for (const p of passes) console.log(`  \x1b[32m✓\x1b[0m ${p}`);
 for (const f of failures) console.log(`  \x1b[31m✗\x1b[0m ${f}`);
-console.log(`\n  ${passes.length} passed · ${failures.length} failed`);
-process.exit(failures.length ? 1 : 0);
+for (const item of broken) console.log(`  \x1b[33m?\x1b[0m ${item}`);
+console.log(`\n  ${passes.length} passed · ${failures.length} failed · ${broken.length} incomplete`);
+process.exit(gateExitCode({ failures: failures.length, incomplete: broken.length }));

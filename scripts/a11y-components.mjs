@@ -16,27 +16,44 @@
  *   node scripts/a11y-components.mjs http://localhost:3010
  */
 import { chromium } from 'playwright';
+import { loadRouteInventory, prepareStaticAuditPage } from './a11y-routes.mjs';
+import { gateExitCode } from './a11y-result.mjs';
 
 const BASE = process.argv[2] || 'https://damato-python.vercel.app';
 
-const ROUTES = ['/', '/learn', '/projects', '/stats', '/glossary', '/review',
+let inventory;
+try {
+  inventory = await loadRouteInventory(BASE);
+} catch (error) {
+  console.error(`\n\x1b[31mBROKEN RUN: ${error.message}\x1b[0m`);
+  process.exit(2);
+}
+
+const INTERACTIVE_ROUTES = ['/', '/learn', '/projects', '/stats', '/glossary', '/review',
   '/learn/ai-python/embeddings',
   // The last lesson of a module with a checkpoint, which is the only place a radiogroup
   // renders. Without it the radiogroup check passed by never running.
   '/learn/start-here/how-to-learn-here'];
+const interactiveSet = new Set(INTERACTIVE_ROUTES);
+const ROUTES = inventory.allPageRoutes;
 
 const failures = [];
 const passes = [];
+const brokenRuns = [];
 function check(ok, name, detail = '') {
   (ok ? passes : failures).push(detail ? `${name} — ${detail}` : name);
   process.stdout.write(ok ? '\x1b[32m.\x1b[0m' : '\x1b[31mF\x1b[0m');
+}
+function incomplete(name, detail) {
+  brokenRuns.push(`${name} — ${detail}`);
+  process.stdout.write('\x1b[33m?\x1b[0m');
 }
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 const page = await ctx.newPage();
 // Returning-user state: the tour is a dialog and belongs to a11y-modals.mjs.
-await page.addInitScript(() => localStorage.setItem('python-mastery-onboarding-seen', '1'));
+await prepareStaticAuditPage(page);
 
 let visited = 0;
 
@@ -44,10 +61,10 @@ for (const route of ROUTES) {
   try {
     await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
     visited += 1;
   } catch (e) {
-    check(false, `[${route}] page loads`, e.message.split('\n')[0].slice(0, 60));
+    incomplete(`[${route}] page loads`, e.message.split('\n')[0].slice(0, 80));
     continue;
   }
 
@@ -72,6 +89,19 @@ for (const route of ROUTES) {
   check(unreachable.length === 0, `[${route}] no mouse-only controls`,
     unreachable.length ? `${unreachable.length} pointer-cursor element(s) not keyboard reachable: ${unreachable.slice(0, 2).join(' | ')}` : '');
 
+  // aria-controls is optional, but when present it must point at something in every
+  // state, including the collapsed state where the original dock failed.
+  const danglingControls = await page.evaluate(() =>
+    [...document.querySelectorAll('[aria-controls]')]
+      .map((el) => el.getAttribute('aria-controls'))
+      .filter((id) => id && !document.getElementById(id)));
+  check(danglingControls.length === 0, `[${route}] aria-controls point at real elements`,
+    danglingControls.length ? `dangling: ${danglingControls.join(', ')}` : '');
+
+  // Behavioural interaction is intentionally representative; the structural contracts
+  // above run on all 117 content routes.
+  if (!interactiveSet.has(route)) continue;
+
   // --- disclosures must toggle from the keyboard and control something real ---
   const expandables = await page.locator('[aria-expanded]').all();
   if (expandables.length) {
@@ -94,13 +124,6 @@ for (const route of ROUTES) {
     check(broken.length === 0, `[${route}] aria-expanded controls toggle by keyboard`,
       broken.length ? broken.join('; ') : `${expandables.length} checked`);
 
-    // aria-controls is optional, but when present it must point at something.
-    const danglingControls = await page.evaluate(() =>
-      [...document.querySelectorAll('[aria-controls]')]
-        .map((el) => el.getAttribute('aria-controls'))
-        .filter((id) => id && !document.getElementById(id)));
-    check(danglingControls.length === 0, `[${route}] aria-controls point at real elements`,
-      danglingControls.length ? `dangling: ${danglingControls.join(', ')}` : '');
   }
 
   // --- radiogroups must respond to the arrow keys ---
@@ -136,12 +159,24 @@ for (const route of ROUTES) {
   }
 }
 
-check(visited === ROUTES.length, 'every route was reachable', `${visited}/${ROUTES.length} loaded`);
+if (visited !== ROUTES.length) {
+  incomplete('every route was reachable', `${visited}/${ROUTES.length} loaded`);
+} else {
+  check(true, 'every route was reachable', `${visited}/${ROUTES.length} loaded`);
+}
 
 await browser.close();
 
-console.log(`\n\n\x1b[1mcomponent keyboard contracts · ${passes.length + failures.length} checks\x1b[0m`);
+console.log(
+  `\n\n\x1b[1mcomponent keyboard contracts · ${passes.length + failures.length} checks · ` +
+  `${inventory.counts.lessons}/${inventory.counts.lessons} lessons · ` +
+  `${inventory.counts.projects}/${inventory.counts.projects} projects\x1b[0m`,
+);
 for (const p of passes) console.log(`  \x1b[32m✓\x1b[0m ${p}`);
 for (const f of failures) console.log(`  \x1b[31m✗\x1b[0m ${f}`);
-console.log(`\n  ${passes.length} passed · ${failures.length} failed`);
-process.exit(failures.length ? 1 : 0);
+for (const item of brokenRuns) console.log(`  \x1b[33m?\x1b[0m ${item}`);
+console.log(
+  `\n  ${passes.length} passed · ${failures.length} failed · ` +
+  `${brokenRuns.length} incomplete`,
+);
+process.exit(gateExitCode({ failures: failures.length, incomplete: brokenRuns.length }));
